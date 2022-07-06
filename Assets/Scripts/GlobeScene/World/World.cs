@@ -4,20 +4,18 @@ using UnityEngine;
 
 public class World : MonoBehaviour
 {
-    [Header("CubeSphere")]
-    [Tooltip("Specifies the resolution of the cube sphere.")]
+    [Header("VoronoiSphere")]
+    [Tooltip("Specifies the resolution of the voronoi sphere initial vertices.")]
     [SerializeField] [Range(2,256)] private int resolution = 2;
-    [Tooltip("Normalizes the cube to a sphere when true.")]
-    [SerializeField] private bool normalize = true;
+    [Tooltip("Adds randomization in points after voronoi cells are calculated")]
+    [SerializeField] [Range(0f, 1f)] private float jitter = 0f;
 
-    private CubeSphere cubeSphere;
-    private GameObject meshObject;
+    private VoronoiSphere voronoiSphere;
 
     private void Start()
     {
-        cubeSphere = new CubeSphere(resolution, normalize);
+        voronoiSphere = new VoronoiSphere(resolution, jitter);
 
-        meshObject = cubeSphere.CubeSphereMesh;
-        meshObject.transform.parent = this.transform;
+        voronoiSphere.VoronoiSphereMesh.transform.parent = this.transform;
     }
 }
