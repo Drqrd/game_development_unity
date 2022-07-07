@@ -7,6 +7,7 @@ public class VoronoiSphere
     private float jitter;
     private Vector3[] directions;
 
+    public GameObject CubeSphereMesh { get; private set; }
     public GameObject VoronoiSphereMesh { get; private set; }
 
     public VoronoiSphere(int resolution, float jitter)
@@ -24,9 +25,12 @@ public class VoronoiSphere
         int[] triangles;
 
         GetVerticesAndTriangles(out vertices, out triangles);
-        BuildGameObject(vertices, triangles);
+        GetVoronoiCells(vertices, triangles);
+        BuildGameObjects(vertices, triangles);
     }
 
+
+    // Constructs a flattened cube sphere mesh 
     private void GetVerticesAndTriangles(out Vector3[] vertices, out int[] triangles)
     {
         Dictionary<Vector3, List<int>> map = new Dictionary<Vector3, List<int>>();
@@ -73,42 +77,46 @@ public class VoronoiSphere
         }
 
         // Collapse Vertices / Triangles
+        int ind = 0;
         foreach(KeyValuePair<Vector3, List<int>> kvp in map)
         {
             // If there is more than one index per vertex, that means that the vertex is shared with another triangle i.e. border vertex.
             // We need to collapse the vertex (by replacing all the triangles with the first instance of i)
-            foreach (int v in kvp.Value) Debug.Log($"{kvp.Key}: {v}");
             
             for(int a = 0; a < kvp.Value.Count; a++)
             {
                 int[] indexes = Enumerable.Range(0, ts.Count).Where(i => ts[i] == kvp.Value[a]).ToArray();
                 for(int b = 0; b < indexes.Length; b++)
                 {
-                    ts[indexes[b]] = kvp.Value[0];
+                    ts[indexes[b]] = ind;
                 }
             }
+            ind++;
         }
-
-        foreach (int t in ts) Debug.Log(t);
-
-        Debug.Log(ts.Max());
-        Debug.Log(map.Count);
 
         vertices = map.Keys.ToArray();
         triangles = ts.ToArray();
     }
 
-    private void BuildGameObject(Vector3[] vertices, int[] triangles)
+    private void GetVoronoiCells(Vector3[] vertices, int[] triangles)
     {
-        VoronoiSphereMesh = new GameObject("Mesh");
+        // Get all edges from int[] triangles (Vector3[2] { vertices[int], vertices[int] }) into a HashSet
+        // for each vertex, query against HashSet to get neighbors
+        // With all vertex neighbors, get all triangle neighbors for a triangle
+        // For each cell, it is made up of the centroids of each of a vertex's neighboring triangles
+    }
 
-        MeshFilter meshFilter = VoronoiSphereMesh.AddComponent<MeshFilter>();
+    private void BuildGameObjects(Vector3[] vertices, int[] triangles)
+    {
+       CubeSphereMesh = new GameObject("CubeSphereMesh");
+
+        MeshFilter meshFilter = CubeSphereMesh.AddComponent<MeshFilter>();
         meshFilter.sharedMesh = new Mesh();
         meshFilter.sharedMesh.vertices = vertices;
         meshFilter.sharedMesh.triangles = triangles;
         meshFilter.sharedMesh.RecalculateNormals();
 
-        MeshRenderer meshRenderer = VoronoiSphereMesh.AddComponent<MeshRenderer>();
+        MeshRenderer meshRenderer = CubeSphereMesh.AddComponent<MeshRenderer>();
         meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
     }
 
@@ -128,5 +136,22 @@ public class VoronoiSphere
         float z = p.z * Mathf.Sqrt(1 - (x2 + y2) / 2 + (x2 * y2) / 3);
 
         return new Vector3(x, y, z);
+    }
+
+    private class Triangle 
+    {
+        public Vector3[] Vertices { get; private set; }
+        public Triangle[] Neighbors { get; private set; }
+        public Triangle(Vector3 v1, Vector3 v2, Vector3 v3)
+        {
+            this.Vertices = new Vector3[] { v1, v2, v3 };
+            this.Neighbors = null;
+        }
+
+        public void SetNeighbors(Triangle[] neighbors)
+        {
+            if (this.Neighbors == null) this.Neighbors = neighbors;
+            else Debug.LogError("ERROR SETTING TRIANGLE NEIGHBORS --- ALREADY SET");
+        }
     }
 }
