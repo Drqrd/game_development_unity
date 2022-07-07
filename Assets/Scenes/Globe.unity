@@ -166,9 +166,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e277c0f671939740a8c6772751ac761, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resolution: 55
+  resolution: 2
   jitter: 0
-  normalize: 1
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
