@@ -12,8 +12,6 @@ namespace Generation.Voronoi
         private float jitter;
         private Vector3[] directions;
         private TimeTracker debugTimeTracker;
-        
-
         public GameObject CubeSphereMesh { get; private set; }
         public GameObject VoronoiSphereMesh { get; private set; }
 
@@ -40,7 +38,8 @@ namespace Generation.Voronoi
         }
 
 
-        // Constructs a flattened cube sphere mesh 
+        // Constructs a flattened cube sphere mesh
+        // Assigns neighbors here using adjacency matrix
         private void GetVerticesAndTriangles(out Vector3[] vertices, out int[] triangles)
         {
             if (debugTimeTracker != null) debugTimeTracker.LogTimeStart("GetVerticesAndTriangles()");
@@ -136,39 +135,12 @@ namespace Generation.Voronoi
         private void GetVoronoiCells(Vector3[] vs, int[] ts)
         {
             // NEEDS IMPROVEMENT
-            // Get all edges from int[] triangles (Vector3[2] { vertices[int], vertices[int] }) into a HashSet
-            // for each vertex, query against HashSet to get neighbors
-            // With all vertex neighbors, get all triangle neighbors for a triangle
-            // For each cell, it is made up of the centroids of each of a vertex's neighboring triangles
-
-            // Create dictionary by vertex?
-            // We know that a vertex will have at least 2 triangles attached, and these two triangles will share 1 edge that connects to the vertex.
 
             if (debugTimeTracker != null) debugTimeTracker.LogTimeStart("GetVoronoiCells()");
 
-            List<Triangle> triangles = new List<Triangle>();
-            Dictionary<Edge, List<Triangle>> edgeDictionary = new Dictionary<Edge, List<Triangle>>(new Edge.CompareAsSegment());
+            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Objects Generated, Edge Objects Generated");
 
-            for (int a = 0; a < ts.Length; a += 3)
-            {
-                triangles.Add(new Triangle(vs[ts[a + 0]], vs[ts[a + 1]], vs[ts[a + 2]]));
-            }
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Objects Generated");
-
-            foreach(Triangle t in triangles)
-            {
-                if (!edgeDictionary.ContainsKey(t.A)) edgeDictionary.Add(t.A, new List<Triangle>());
-                edgeDictionary[t.A].Add(t);
-                if (!edgeDictionary.ContainsKey(t.B)) edgeDictionary.Add(t.B, new List<Triangle>());
-                edgeDictionary[t.B].Add(t);
-                if (!edgeDictionary.ContainsKey(t.C)) edgeDictionary.Add(t.C, new List<Triangle>());
-                edgeDictionary[t.C].Add(t);
-            }
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Edge Dictionary Generated");
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Neighbors Found");
+            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Neighbors Assigned");
 
             if (debugTimeTracker != null) debugTimeTracker.LogTimeEnd("GetVoronoiCells()");
         }
