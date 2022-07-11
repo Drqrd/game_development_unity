@@ -5,7 +5,7 @@ namespace Generation.Voronoi
 {
     public class Triangle
     {
-        public HashSet<Triangle> Neighbors { get; set; }
+        public List<Triangle> Neighbors { get; set; }
 
         public Edge A { get; private set; }
         public Edge B { get; private set; }
@@ -17,7 +17,7 @@ namespace Generation.Voronoi
         {
             Points = new Vector3[] { a, b, c };
 
-            Neighbors = new HashSet<Triangle>();
+            Neighbors = new List<Triangle>(3);
 
             A = new Edge(a, b);
             B = new Edge(b, c);
@@ -42,7 +42,6 @@ namespace Generation.Voronoi
         {
             return new Vector3((v1.x + v2.x + v3.x) / 3f, (v1.y + v2.y + v3.y) / 3f, (v1.z + v2.z + v3.z) / 3f);
         }
-
     }
 }
 
