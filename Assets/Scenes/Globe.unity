@@ -168,7 +168,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   logWorld: 0
   logVoronoiSphere: 1
-  resolution: 256
+  resolution: 128
   jitter: 0
 --- !u!1 &705507993
 GameObject:
