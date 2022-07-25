@@ -4,71 +4,77 @@ using System.Linq;
 
 using IDebug;
 
+using IMathf = IHelper.Mathf;
+
 namespace Generation.Voronoi 
 {
-    public class Sphere
+    public class Sphere : BaseObject
     {
         private int resolution;
         private float jitter;
         private Vector3[] directions;
-        private TimeTracker debugTimeTracker;
+        private DebugColors debugColors;
+        private DebugProperties debugProperties;
 
         public GameObject CubeSphereMesh { get; private set; }
         public GameObject VoronoiSphereMesh { get; private set; }
+        public Cell VoronoiCells { get; private set; }
 
-        public Sphere(int resolution, float jitter, bool logTime)
+        
+
+        public Sphere(int resolution, float jitter, DebugProperties debugProperties)
         {
             this.resolution = resolution;
             this.jitter = jitter;
-            this.directions = new Vector3[6] { Vector3.forward, Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.back };
+            this.debugProperties = debugProperties;
 
-            debugTimeTracker = (logTime) ? new TimeTracker() : null;
+            this.directions = new Vector3[6] { Vector3.forward, Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.back };
 
             Generate();
         }
 
         private void Generate()
         {
+            BuildDebug();
+
             Vector3[] vertices;
             int[] triangles;
+            Color[] colors;
 
-
-            GetVerticesAndTriangles(out vertices, out triangles);
-            // GetVoronoiCells(vertices, triangles);
-            BuildGameObjects(vertices, triangles);
+            GetVerticesAndTriangles(out vertices, out triangles, out colors);
+            GetVoronoiCells(vertices, triangles);
+            BuildGameObjects(vertices, triangles, colors);
         }
 
 
         // Constructs a flattened cube sphere mesh
         // Assigns neighbors here using adjacency matrix
-        private void GetVerticesAndTriangles(out Vector3[] vertices, out int[] triangles)
+        private void GetVerticesAndTriangles(out Vector3[] vertices, out int[] triangles, out Color[] colors)
         {
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeStart("GetVerticesAndTriangles()");
+            TryLogStart("GetVerticesAndTriangles()");
 
+            Dictionary<Vector3,int> vDict = new Dictionary<Vector3,int>();
             List<Vector3> vs = new List<Vector3>();
             List<int> ts = new List<int>();
-
-            List<int>[] borderIndices = new List<int>[20];
-            Dictionary<Vector3, int[]> borderIndicesLocalUp = new Dictionary<Vector3, int[]>();
-
-            for (int a = 0; a < 20; a++) borderIndices[a] = new List<int>();
-
-            borderIndicesLocalUp[Vector3.forward] = new int[] { 8, 9, 10, 11 };
-            borderIndicesLocalUp[Vector3.up] = new int[] { 12, 13, 14, 8 };
-            borderIndicesLocalUp[Vector3.down] = new int[] { 11, 15, 16, 17 };
-            borderIndicesLocalUp[Vector3.left] = new int[] { 13, 18, 9, 15 };
-            borderIndicesLocalUp[Vector3.right] = new int[] { 14, 10, 19, 16 };
-            borderIndicesLocalUp[Vector3.back] = new int[] { 17, 19, 18, 12 };
-
+            List<Color> cs = new List<Color>();
+            List<Triangle> triangleObjs = new List<Triangle>();
             // Generate Vertices and Triangles
             // For each direction
 
-            int index = 0;
+            int index = 0, vIndex = 0;
             for (int f = 0; f < directions.Length; f++)
             {
                 Vector3 localUp = directions[f];
-                Vector3 axisA = new Vector3(localUp.y, localUp.z, localUp.x);
-                Vector3 axisB = Vector3.Cross(localUp, axisA);
+                
+                Vector3 axisA;
+                if (localUp == Vector3.forward) axisA = Vector3.left;
+                else if (localUp == Vector3.up) axisA = Vector3.left;
+                else if (localUp == Vector3.down) axisA = Vector3.left;
+                else if (localUp == Vector3.left) axisA = Vector3.back;
+                else if (localUp == Vector3.right) axisA = Vector3.forward;
+                else axisA = Vector3.right;
+
+                Vector3 axisB = Vector3.Cross(localUp,axisA);
 
                 for (int y = 0; y < resolution; y++)
                 {
@@ -77,14 +83,14 @@ namespace Generation.Voronoi
                         // Vertex generation
                         Vector2 percent = new Vector2(x, y) / (resolution - 1);
                         Vector3 pointOnCube = localUp + (percent.x - .5f) * 2f * axisA + (percent.y - .5f) * 2f * axisB;
-                        Vector3 pointOnSphere = PointOnCubeToPointOnSphere(pointOnCube);
-
-                        if (x == 0 || x == resolution - 1 || y == 0 || y == resolution - 1)
-                        {
-                            borderIndices[OrganizeBorderVertex(pointOnSphere, x, y, localUp, borderIndicesLocalUp)].Add(index);
-                        }
+                        Vector3 pointOnSphere = pointOnCube; // PointOnCubeToPointOnSphere(pointOnCube);
 
                         vs.Add(pointOnSphere);
+                        
+
+                        if (!vDict.ContainsKey(pointOnSphere)) {
+                            vDict.Add(pointOnSphere, vIndex++);
+                        }
 
                         // Triangles
                         if (x != resolution - 1 && y != resolution - 1)
@@ -101,134 +107,167 @@ namespace Generation.Voronoi
                     }
                 }
             }
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Generated Vertices and Triangles");
-
-
-            HashSet<Vector3> vHash = new HashSet<Vector3>();
-            foreach (Vector3 v in vs) vHash.Add(v);
-            List<Vector3> collapsedVs = vHash.ToList();
+            TryLogElapsed("Generated Vertices and Triangles");
 
             // Collapse Triangles
-            foreach(List<int> vsToChange in borderIndices)
+            if (!debugProperties.uniqueTriangles)
             {
-                if (vsToChange.Count > 0)
+                for (int a = 0; a < ts.Count; a++)
                 {
-                    int vertIndex = collapsedVs.IndexOf(vs[vsToChange[0]]);
-                    for (int vIndex = 0; vIndex < vsToChange.Count; vIndex++)
-                    {
-                        ts = ts.Select(t => t == vsToChange[vIndex] ? vertIndex : t).ToList();
-                    }
+                    ts[a] = vDict[vs[ts[a]]];
                 }
             }
 
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Collapsed Vertices and Triangles");
+            List<Vector3> tvs = new List<Vector3>(); ;
+            if (debugProperties.uniqueTriangles)
+            {
+                for (int a = 0; a < ts.Count; a++)
+                {
+                    tvs.Add(vs[ts[a]]);
+                    ts[a] = a;
+                }
+            }
 
-            vertices = collapsedVs.ToArray();
+            TryLogElapsed("Collapsed Vertices and Triangles");
+            
+            for (int a = 0; a < ts.Count; a += 3)
+            {
+                if (debugProperties.uniqueTriangles) triangleObjs.Add(new Triangle(tvs[ts[a + 0]], tvs[ts[a + 1]], tvs[ts[a + 2]]));
+                else triangleObjs.Add(new Triangle(vs[ts[a + 0]], vs[ts[a + 1]], vs[ts[a + 2]]));
+
+            }
+            TryLogElapsed("Generated Triangle Objects");
+
+            triangleObjs = FindTriangleNeighbors(triangleObjs, out cs);
+
+            TryLogElapsed("Assigned Triangle Neighbors");
+
+            vertices = debugProperties.uniqueTriangles ? tvs.ToArray() : vDict.Keys.ToArray();
             triangles = ts.ToArray();
+            colors = cs.ToArray();
+            TryLogEnd();
 
-            Debug.Log(vertices.Length);
-            Debug.Log(ts.IndexOf(Mathf.Max(triangles)));
-            Debug.Log(triangles.Length);
+            // LOCAL FUNCTIONS
+            List<Triangle> FindTriangleNeighbors(List<Triangle> ts, out List<Color> cs)
+            {
+                cs = new List<Color>();
 
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeEnd();
+                int[][] faceNeighbors = new int[6][] {
+                new int[4] { 1, 3, 4, 2 },
+                new int[4] { 5, 3, 4, 0 },
+                new int[4] { 0, 3, 4, 5 },
+                new int[4] { 1, 5, 0, 2 },
+                new int[4] { 1, 0, 5, 2 },
+                new int[4] { 2, 3, 4, 1 }};
+
+                int trianglesPerFace = (resolution - 1) * (resolution - 1) * 2;
+                int trianglesAcross = (resolution - 1) * 2;
+                int lastRow = trianglesPerFace - trianglesAcross;
+
+                for (int a = 0; a < ts.Count; a++)
+                {
+                    int triIndex = a % trianglesPerFace;
+                    int currentFace = a / trianglesPerFace;
+
+                    // TopRightCorner Triangle -- DEBUG COLOR: Red
+                    if (triIndex == trianglesAcross - 1)
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[0]);
+                        
+                        // Top Neighbor
+                        // Interior Neighbor
+                        // Left Neighbor
+                    }
+                    // BottomLeftCornerTriangle -- DEBUG COLOR: Blue
+                    else if (triIndex == trianglesPerFace - trianglesAcross)
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[1]);
+                        
+                        // Interior Neighbor
+                        // Right Neighbor
+                        // Bottom Neighbor
+                    }
+                    // Top Triangle -- DEBUG COLOR: Yellow
+                    else if (triIndex < trianglesAcross && IMathf.IsEven(triIndex))
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[2]);
+
+                        // Top Neighbor
+                        // Interior Right Neighbor
+                        // Interior Left Neighbor
+                    }
+                    // Left Triangle -- DEBUG COLOR: Cyan
+                    else if (triIndex % trianglesAcross == 0)
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[3]);
+                    }
+                    // Right Triangle -- DEBUG COLOR: Magenta
+                    else if (triIndex % trianglesAcross == trianglesAcross - 1)
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[4]);
+
+                    }
+                    // Bottom Triangle -- DEBUG COLOR: Green
+                    else if (triIndex < lastRow && IMathf.IsOdd(triIndex))
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[5]);
+
+                    }
+                    // Even Interior Triangle -- DEBUG COLOR: White
+                    else if (IMathf.IsEven(triIndex))
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[6]);
+
+                    }
+                    // Odd Interior Triangle -- DEBUG COLOR: Gray
+                    else
+                    {
+                        // Self
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[6]);
+
+                    }
+                }
+                return ts;
+            }
         }
 
         private void GetVoronoiCells(Vector3[] vs, int[] ts)
         {
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeStart("GetVoronoiCells()");
+            TryLogStart("GetVoronoiCells()");
 
-            // vertexIndex dictionary
-            Dictionary<Edge, List<Triangle>> dict = new Dictionary<Edge, List<Triangle>>(new CompareAsSegment());
-            List<Triangle> triangles = new List<Triangle>();
+            TryLogElapsed("Triangle Objects Generated");
 
-            for (int a = 0; a < ts.Length; a += 3)
-            {
-                Triangle triangle = new Triangle(vs[ts[a + 0]], vs[ts[a + 1]], vs[ts[a + 2]]);
-                triangles.Add(triangle);
+            TryLogElapsed("Triangle Neighbors Assigned");
 
-                Edge A = new Edge(vs[ts[a + 0]], vs[ts[a + 1]]);
-                Edge B = new Edge(vs[ts[a + 1]], vs[ts[a + 2]]);
-                Edge C = new Edge(vs[ts[a + 2]], vs[ts[a + 0]]);
+            TryLogElapsed("Voronoi Cell Objects Generated");
 
-                if (!dict.ContainsKey(A)) dict.Add(A, new List<Triangle>());
-                dict[A].Add(triangle);
-                if (!dict.ContainsKey(B)) dict.Add(B, new List<Triangle>());
-                dict[B].Add(triangle);
-                if (!dict.ContainsKey(C)) dict.Add(C, new List<Triangle>());
-                dict[C].Add(triangle);
-            }
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Objects Generated, Vertex Dictionary Generated");
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeElapsed("Triangle Neighbors Assigned");
-
-            if (debugTimeTracker != null) debugTimeTracker.LogTimeEnd("GetVoronoiCells()");
+            TryLogEnd();
         }
 
-        private void BuildGameObjects(Vector3[] vertices, int[] triangles)
+        private void BuildGameObjects(Vector3[] vertices, int[] triangles, Color[] colors)
         {
             CubeSphereMesh = new GameObject("CubeSphereMesh");
 
             MeshFilter meshFilter = CubeSphereMesh.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = new Mesh();
-            meshFilter.sharedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            meshFilter.sharedMesh.vertices = vertices;
-            meshFilter.sharedMesh.triangles = triangles;
+
+            Mesh mesh = new Mesh();
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.colors = colors;
+
+            meshFilter.sharedMesh = mesh;
             meshFilter.sharedMesh.RecalculateNormals();
 
             MeshRenderer meshRenderer = CubeSphereMesh.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
-        }
-
-        private int OrganizeBorderVertex(Vector3 v, int x, int y, Vector3 localUp, Dictionary<Vector3,int[]> borderIndicesLocalUp)
-        {
-            // Corner vertices cover indices 0-7, dimensions seen below
-            if (v == PointOnCubeToPointOnSphere(new Vector3(1, -1, 1))) return 0;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(1, 1, 1))) return 1;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(-1, -1, 1))) return 2;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(-1, 1, 1))) return 3;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(-1, 1, -1))) return 4;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(1, 1, -1))) return 5;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(1, -1, -1))) return 6;
-            else if (v == PointOnCubeToPointOnSphere(new Vector3(-1, -1, -1))) return 7;
-
-            // Edge vertices are as follows: 
-            // - forward up     = 8
-            // - forward left   = 9
-            // - forward right  = 10
-            // - forward down   = 11
-            // - up up          = 12
-            // - up left        = 13
-            // - up right       = 14
-            // - up down        = 8
-            // - down up        = 11
-            // - down left      = 15
-            // - down right     = 16
-            // - down down      = 17
-            // - left up        = 13
-            // - left left      = 18
-            // - left right     = 9
-            // - left down      = 15
-            // - right up       = 14
-            // - right left     = 10
-            // - right right    = 19
-            // - right down     = 16
-            // - back up        = 17
-            // - back left      = 19
-            // - back right     = 18
-            // - back down      = 12
-            // Up
-            else if (y == 0) return borderIndicesLocalUp[localUp][0];
-            // Left
-            else if (x == 0) return borderIndicesLocalUp[localUp][1];
-            // Right
-            else if (x == resolution - 1) return borderIndicesLocalUp[localUp][2];
-            // Down
-            else if (y == resolution - 1) return borderIndicesLocalUp[localUp][3];
-
-            // Throw Error
-            return -1;
         }
 
         public static Vector3 PointOnCubeToPointOnSphere(Vector3 p)
@@ -242,6 +281,56 @@ namespace Generation.Voronoi
             float z = p.z * Mathf.Sqrt(1 - (x2 + y2) / 2 + (x2 * y2) / 3);
 
             return new Vector3(x, y, z);
+        }
+
+        /* ---------- DEBUG ---------- */
+
+        public struct DebugColors
+        {
+            /*
+            public Color[] VertexColorArray { get; private set; }
+            public Color[] TriangleColorArray { get; private set; }
+            public Color[] FaceColorArray { get; private set; }
+            */
+
+            public Color[] VertexColorSet { get; private set; }
+            public Color[] TriangleColorSet { get; private set; }
+            public Color[] FaceColorSet { get; private set; }
+
+            public DebugColors(Color[] vcs, Color[] tcs, Color[] fcs) // Color[] vca, Color[] tca, Color[] fca)
+            {
+                VertexColorSet = vcs;
+                TriangleColorSet = tcs;
+                FaceColorSet = fcs;
+            }
+        }
+
+        public struct DebugProperties
+        {
+            public bool uniqueTriangles { get; private set; }
+            public bool logTime { get; private set; }
+
+            public DebugProperties(bool ut, bool lt)
+            {
+                uniqueTriangles = ut;
+                logTime = lt;
+            }
+        }
+
+        private void BuildDebug()
+        {
+            debugTimeTracker = (debugProperties.logTime) ? new TimeTracker() : null;
+
+            // Forward, Up, Down, Left, Right, Back
+            Color[] faceColorSet = new Color[6] { Color.white, Color.blue, Color.red, Color.yellow, Color.green, Color.gray };
+
+            // Start, End, Top, Left, Right, Down, InteriorEven, InteriorOdd
+            Color[] triangleColorSet = new Color[8] { Color.red, Color.blue, Color.yellow, Color.cyan, Color.magenta, Color.green, Color.white, Color.gray };
+
+            // CornerTopLeft, CornerTopRight, CornerBottomLeft, CornerBottomRight, Top, Left, Right, Bottom, Interior
+            Color[] vertexColorSet = new Color[9] { Color.red, Color.blue, Color.yellow, Color.green, Color.magenta, Color.cyan, new Color(1, .4f, 0), Color.black, Color.white };
+
+            debugColors = new DebugColors(vertexColorSet, triangleColorSet, faceColorSet);
         }
     }
 }
