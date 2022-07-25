@@ -1,21 +1,37 @@
 using UnityEngine;
 
-public class VoronoiCell
+namespace Generation.Voronoi
 {
-    public Vector3 Center {get; private set; }
-    public Vector3[] Vertices { get; private set; }
-    public int[] Triangles { get; private set; }
-    public VoronoiCell Neighbors { get; set; }
-
-    public VoronoiCell(Vector3 center, Vector3[] vertices)
+    public class Cell
     {
-        Center = center;
-        Vertices = vertices;
-        Triangulate();
-    }
+        public Vector3 Center { get; private set; }
+        public Vector3[] Vertices { get; private set; }
+        public int[] Triangles { get; private set; }
+        public Cell Neighbors { get; set; }
 
-    private void Triangulate()
-    {
+        public Cell(Vector3[] vertices)
+        {
+            Vertices = vertices;
+            Center = GetCenter();
+            Triangulate();
+        }
 
+        private Vector3 GetCenter()
+        {
+            Vector3 c = Vector3.zero;
+            foreach(Vector3 vertex in Vertices)
+            {
+                c += vertex;
+            }
+            c /= Vertices.Length;
+
+            return c;
+        }
+
+        private int[] Triangulate()
+        {
+            return new int[] { };
+        }
     }
 }
+
