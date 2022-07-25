@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace IHelper
 {
-    public static class List<T> 
+    public struct List<T> 
     {
         public static void Log(System.Collections.Generic.List<T> l)
         {
