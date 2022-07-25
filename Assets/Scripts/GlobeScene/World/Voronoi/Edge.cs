@@ -1,8 +1,8 @@
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Generation.Voronoi {
+namespace Generation.Voronoi 
+{
     public class Edge
     {
         public Vector3 A { get; private set; }
