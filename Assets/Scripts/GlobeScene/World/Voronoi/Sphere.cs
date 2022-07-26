@@ -190,7 +190,7 @@ namespace Generation.Voronoi
                         // Bottom Neighbor
                     }
                     // Top Triangle -- DEBUG COLOR: Yellow
-                    else if (triIndex < trianglesAcross && IMathf.IsEven(triIndex))
+                    else if (triIndex < trianglesAcross && IMathf.IsOdd(triIndex))
                     {
                         // Self
                         if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[2]);
@@ -213,7 +213,7 @@ namespace Generation.Voronoi
 
                     }
                     // Bottom Triangle -- DEBUG COLOR: Green
-                    else if (triIndex < lastRow && IMathf.IsOdd(triIndex))
+                    else if (triIndex > lastRow && IMathf.IsEven(triIndex))
                     {
                         // Self
                         if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[5]);
@@ -230,7 +230,7 @@ namespace Generation.Voronoi
                     else
                     {
                         // Self
-                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[6]);
+                        if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[7]);
 
                     }
                 }
