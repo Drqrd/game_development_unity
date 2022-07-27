@@ -21,11 +21,13 @@ public class World : BaseObjectMono
     [Tooltip("When enabled, will output the times for the Sphere script.")]
     [SerializeField] private bool logVoronoiSphere;
 
+    private Sphere voronoiSphere;
+
     private void Start()
     {
         debugTimeTracker = (logWorld) ? new TimeTracker() : null;
         
-        Sphere voronoiSphere;
+        // Sphere voronoiSphere;
         Sphere.DebugProperties sphereDebugProperties;
 
         GenerateDebugProperties(out sphereDebugProperties);
@@ -39,7 +41,21 @@ public class World : BaseObjectMono
 
     private void GenerateDebugProperties(out Sphere.DebugProperties debugSphere)
     {
-        
         debugSphere = new Sphere.DebugProperties(uniqueTriangles, logVoronoiSphere);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.red;
+            foreach(Triangle tri in voronoiSphere.debugTs)
+            {
+                foreach(Triangle n in tri.Neighbors)
+                {
+                    Gizmos.DrawSphere(n.Centroid, .1f);
+                }
+            }
+        }
     }
 }
