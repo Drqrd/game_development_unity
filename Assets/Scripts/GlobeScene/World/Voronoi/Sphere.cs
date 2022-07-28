@@ -320,23 +320,194 @@ namespace Generation.Voronoi
                     {
                         // Self - Debug Coloring
                         if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[2]);
+                        /*
+                        // Forward
+                        if (currentFace == 0)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 1  + lastRow + triIndex - 1]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        // Up
+                        if (currentFace == 1)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 5 + triIndex + 2]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        // Down
+                        if (currentFace == 2)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 0 + lastRow + triIndex - 1]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        // Left
+                        if (currentFace == 3)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 1 + trianglesAcross * (triIndex / 2) + (trianglesAcross * 2) - 1]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
 
-                        // Top Neighbor
-                        // Interior Right Neighbor
-                        // Interior Left Neighbor
+                        if (currentFace == 4)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 1 + trianglesAcross * (triIndex / 2)]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        if (currentFace == 5)
+                        {
+                            // Top Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 1 + triIndex + 2]);
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        */
                     }
                     // Left Triangle -- DEBUG COLOR: Cyan
                     else if (triIndex % trianglesAcross == 0)
                     {
                         // Self
                         if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[3]);
+                        /*
+                        // Forward
+                        if (currentFace == 0)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 4 + triIndex + trianglesAcross - 1]);
+                        }
+                        
+                        // Up
+                        if (currentFace == 1)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 4 + triIndex * 2 / trianglesAcross + 1]);
+                        }
+                        
+                        // Down
+                        if (currentFace == 2)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 4 + triIndex * 2 / trianglesAcross + 1 + lastRow + 1]);
+                        }
+                        
+                        // Left
+                        if (currentFace == 3)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 0 + triIndex + trianglesAcross - 1]);
+                        }
+                        
+                        // Right
+                        if (currentFace == 4)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 5 + triIndex + trianglesAcross - 1]);
+                        }
+                        
+                        // Back
+                        if (currentFace == 5)
+                        {
+                            // Interior Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
+                            // Interior Bottom Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + trianglesAcross + 1]);
+                            // Left Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 3 + triIndex + trianglesAcross - 1]);
+                        }
+                        */
                     }
                     // Right Triangle -- DEBUG COLOR: Magenta
                     else if (triIndex % trianglesAcross == trianglesAcross - 1)
                     {
                         // Self
                         if (debugProperties.uniqueTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[4]);
-
+                        /*
+                        // Forward
+                        if (currentFace == 0)
+                        {
+                            // Interior Top Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - trianglesAcross - 1]);
+                            // Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 3 + triIndex - trianglesAcross + 1]);
+                            // Interior Left Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        // Up
+                        if (currentFace == 1)
+                        {
+                            // Interior Top Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - trianglesAcross - 1]);
+                            // Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 3 + triIndex * 2 / trianglesAcross - 2]);
+                            // Interior Left Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        
+                        // Down
+                        if (currentFace == 2)
+                        {
+                            // Interior Top Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - trianglesAcross - 1]);
+                            // Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 3 + triIndex * 2 / trianglesAcross + lastRow - 1]);
+                            // Interior Left Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
+                        */
+                        // Left
+                        if (currentFace == 3)
+                        {
+                            // Interior Top Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - trianglesAcross - 1]);
+                            // Right Neighbor
+                            ts[triIndex].Neighbors.Add(ts[trianglesPerFace * 3 + triIndex * 2 / trianglesAcross + lastRow - 1]);
+                            // Interior Left Neighbor
+                            // ts[triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - 1]);
+                        }
                     }
                     // Bottom Triangle -- DEBUG COLOR: Green
                     else if (triIndex > lastRow && IMathf.IsEven(triIndex))
