@@ -167,10 +167,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   logWorld: 0
-  resolution: 4
+  resolution: 3
   jitter: 0
-  uniqueTriangles: 1
   logVoronoiSphere: 1
+  uniqueTriangles: 1
+  disableVoronoiSphereMesh: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
