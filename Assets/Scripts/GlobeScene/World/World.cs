@@ -16,10 +16,12 @@ public class World : BaseObjectMono
     [Tooltip("Adds randomization in points after voronoi cells are calculated.")]
     [SerializeField] [Range(0f, 1f)] private float jitter = 0f;
     [Header("- Debug")]
-    [Tooltip("Generates Triangles with unique vertices for triangle debugging.")]
-    [SerializeField] private bool uniqueTriangles;
     [Tooltip("When enabled, will output the times for the Sphere script.")]
     [SerializeField] private bool logVoronoiSphere;
+    [Tooltip("Generates Triangles with unique vertices for triangle debugging.")]
+    [SerializeField] private bool uniqueTriangles;
+    [Tooltip("Disables Mesh Renderer on VoronoiSphere")]
+    [SerializeField] private bool disableVoronoiSphereMesh;
 
     private Sphere voronoiSphere;
 
@@ -41,21 +43,24 @@ public class World : BaseObjectMono
 
     private void GenerateDebugProperties(out Sphere.DebugProperties debugSphere)
     {
-        debugSphere = new Sphere.DebugProperties(uniqueTriangles, logVoronoiSphere);
+        debugSphere = new Sphere.DebugProperties(uniqueTriangles, logVoronoiSphere, disableVoronoiSphereMesh);
     }
 
     private void OnDrawGizmos()
     {
         if (Application.isPlaying)
         {
+            
             Gizmos.color = Color.red;
-            foreach(Triangle tri in voronoiSphere.debugTs)
+
+
+            /*
+            // Draws Test Edges
+            foreach (Edge e in voronoiSphere.testEdges)
             {
-                foreach(Triangle n in tri.Neighbors)
-                {
-                    Gizmos.DrawSphere(n.Centroid, .1f);
-                }
+                Gizmos.DrawLine(e.A, e.B);
             }
+            */
         }
     }
 }
