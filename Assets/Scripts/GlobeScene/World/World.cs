@@ -18,8 +18,10 @@ public class World : BaseObjectMono
     [Header("- Debug")]
     [Tooltip("When enabled, will output the times for the Sphere script.")]
     [SerializeField] private bool logVoronoiSphere;
-    [Tooltip("Generates Triangles with unique vertices for triangle debugging.")]
-    [SerializeField] private bool uniqueTriangles;
+    [Tooltip("Prevents points from being converted to a sphere.")]
+    [SerializeField] private bool disableSphereTransformation;
+    [Tooltip("Generates Triangles with unique colors depending on its type.")]
+    [SerializeField] private bool colorTriangles;
     [Tooltip("Disables Mesh Renderer on VoronoiSphere")]
     [SerializeField] private bool disableVoronoiSphereMesh;
 
@@ -34,7 +36,6 @@ public class World : BaseObjectMono
 
         GenerateDebugProperties(out sphereDebugProperties);
 
-
         voronoiSphere = new Sphere(resolution, jitter, sphereDebugProperties);
 
         voronoiSphere.CubeSphereMesh.transform.parent = this.transform;
@@ -43,7 +44,7 @@ public class World : BaseObjectMono
 
     private void GenerateDebugProperties(out Sphere.DebugProperties debugSphere)
     {
-        debugSphere = new Sphere.DebugProperties(uniqueTriangles, logVoronoiSphere, disableVoronoiSphereMesh);
+        debugSphere = new Sphere.DebugProperties(colorTriangles, logVoronoiSphere, disableVoronoiSphereMesh, disableSphereTransformation);
     }
 
     private void OnDrawGizmos()
@@ -53,14 +54,11 @@ public class World : BaseObjectMono
             
             Gizmos.color = Color.red;
 
-
-            /*
             // Draws Test Edges
             foreach (Edge e in voronoiSphere.testEdges)
             {
                 Gizmos.DrawLine(e.A, e.B);
             }
-            */
         }
     }
 }
