@@ -167,7 +167,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   logWorld: 0
-  resolution: 4
+  resolution: 2
   jitter: 0
   logVoronoiSphere: 1
   disableSphereTransformation: 0

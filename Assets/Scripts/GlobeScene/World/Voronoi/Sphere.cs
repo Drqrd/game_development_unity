@@ -22,6 +22,7 @@ namespace Generation.Voronoi
         public Cell VoronoiCells { get; private set; }
 
         public Edge[] testEdges { get; private set; }
+        public Cell[] testCells { get; private set; }
         public Triangle[] tObjs { get; private set; }
 
         public Sphere(int resolution, float jitter, DebugProperties debugProperties)
@@ -44,15 +45,15 @@ namespace Generation.Voronoi
             Triangle[] triangleObjs;
             Color[] colors;
 
-            GetVerticesAndTriangles(out triangleObjs, out colors);
-            GetVoronoiCells(triangleObjs);
+            GetVerticesAndTriangles(out triangleObjs, out vertices, out colors);
+            GetVoronoiCells(triangleObjs, vertices);
             BuildGameObjects(vertices, triangles, triangleObjs, colors);
         }
 
 
         // Constructs a flattened cube sphere mesh
         // Assigns neighbors here using adjacency matrix
-        private void GetVerticesAndTriangles(out Triangle[] triangleObjs, out Color[] colors)
+        private void GetVerticesAndTriangles(out Triangle[] triangleObjs, out Vector3[] vertices, out Color[] colors)
         {
             TryLogStart("GetVerticesAndTriangles()");
 
@@ -130,6 +131,7 @@ namespace Generation.Voronoi
 
             triangleObjs = tObjs.ToArray();
             colors = cs.ToArray();
+            vertices = vs.ToArray();
 
             TryLogEnd();
 
@@ -609,18 +611,27 @@ namespace Generation.Voronoi
             }
         }
 
-        private void GetVoronoiCells(Triangle[] tObjs)
+        private void GetVoronoiCells(Triangle[] tObjs, Vector3[] vs)
         {
             TryLogStart("GetVoronoiCells()");
 
             // Approach:
-            // Dictionary with a list of indices containing a tree. When a node repeats, close that branch. Repeat until all closed.
+            // Given an edge, there are two voronoi cells.
+            // Each vertex has 3 edges attached to it
+            // When looping thorough edges, the smallest signed angle (angle that has a + cross product with the previous normal vector)
+            // - is the next edge of the cell 
+            // Somehow remove edges / vertexes from a list when all cells associated with them are found
             List<Edge> voronoiEdges = new List<Edge>();
-            HashSet<EdgeInt> map = new HashSet<EdgeInt>(new CompareAsEdge());
+            HashSet<EdgeInt> map = new HashSet<EdgeInt>(new EdgeIntCompareEdge());
+            Dictionary<CellInt, int> cellIntHashSet = new Dictionary<CellInt, int>(new CellIntCompareSegments());
+            Dictionary<int, List<int>> vertexAdjacencyGraph = new Dictionary<int, List<int>>();
             foreach(Triangle t in tObjs)
             {
+                vertexAdjacencyGraph.Add(t.Index, new List<int>());
                 foreach(Triangle n in t.Neighbors)
                 {
+                    vertexAdjacencyGraph[t.Index].Add(n.Index);
+
                     EdgeInt e = new EdgeInt(t.Index, n.Index);
                     if (!map.Contains(e))
                     {
@@ -636,11 +647,66 @@ namespace Generation.Voronoi
 
             TryLogElapsed("Voronoi Edges Generated");
 
+            List<Cell> voronoiCellList = new List<Cell>();
+
+            for(int a = 0; a < vertexAdjacencyGraph.Count; a++) {
+                List<int> start = new List<int>(1);
+                start.Add(a);
+                RecurseFindCells(start, 1);
+            }
+
+            Debug.Log("CellIntCount " + cellIntHashSet.Count);
+
+            CellInt[] cellInts = cellIntHashSet.Keys.ToArray();
+
+            Debug.Log(vs.Length);
+
+            foreach(CellInt cellInt in cellInts) {
+                Vector3[] cellVs = new Vector3[cellInt.Points.Count];
+                for(int a = 0; a < cellInt.Points.Count; a++) {
+                    try {
+                        cellVs[a] = vs[cellInt.Points[a]];
+                    }
+                    catch {
+                        Debug.Log("------" + cellInt.Points[a]);
+                    }
+                }
+                voronoiCellList.Add(new Cell(cellVs));
+            }
+
+            Debug.Log("Points");
+            foreach(int a in cellInts[0].Points) Debug.Log(a);
+
             TryLogElapsed("Voronoi Cell Objects Generated");
+
+            testCells = voronoiCellList.ToArray();
 
             TryLogEnd();
 
             // LOCAL FUNCTIONS
+            void RecurseFindCells(List<int> currentCellPartial, int step) {
+                List<int> adjacentPoints = vertexAdjacencyGraph[currentCellPartial.Last()];
+                for(int a = 0; a < adjacentPoints.Count; a++) {
+                    if (step + 1 < 7) {
+                        if (step > 1) {
+                            List<int> nextCellPartial = new List<int>(currentCellPartial.Count + 1);
+                            foreach(int v in currentCellPartial) if (v != currentCellPartial[currentCellPartial.Count - 2]) nextCellPartial.Add(v);
+                            nextCellPartial.Add(adjacentPoints[a]);
+                            RecurseFindCells(nextCellPartial, step + 1);
+                        }
+                        else {
+                            List<int> nextCellPartial = new List<int>(currentCellPartial.Count + 1);
+                            foreach(int v in currentCellPartial) nextCellPartial.Add(v);
+                            nextCellPartial.Add(adjacentPoints[a]);
+                            RecurseFindCells(nextCellPartial, step + 1);
+                        }
+                    }
+                    else if (currentCellPartial[0] == currentCellPartial.Last()) {
+                        CellInt newCell = new CellInt(currentCellPartial);
+                        if (!cellIntHashSet.ContainsKey(newCell)) cellIntHashSet.Add(newCell, 1);
+                    }
+                }
+            }
         }
 
         private void BuildGameObjects(Vector3[] vertices, int[] triangles, Triangle[] tObjs, Color[] colors)

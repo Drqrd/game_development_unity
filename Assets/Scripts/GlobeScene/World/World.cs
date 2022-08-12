@@ -51,13 +51,16 @@ public class World : BaseObjectMono
     {
         if (Application.isPlaying)
         {
-            
             Gizmos.color = Color.red;
-
+            /*
             // Draws Test Edges
             foreach (Edge e in voronoiSphere.testEdges)
             {
                 Gizmos.DrawLine(e.A, e.B);
+            }
+            */
+            for(int a = 1; a < voronoiSphere.testCells[0].Vertices.Length; a++) {
+                Gizmos.DrawLine(voronoiSphere.testCells[0].Vertices[a], voronoiSphere.testCells[0].Vertices[a-1]);
             }
         }
     }
