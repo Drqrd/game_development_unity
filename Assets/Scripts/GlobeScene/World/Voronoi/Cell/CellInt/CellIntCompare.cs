@@ -8,30 +8,30 @@ namespace Generation.Voronoi {
     {
         public bool Equals(CellInt cellOne, CellInt cellTwo)
         {
-            if (cellOne.Points.Count != cellTwo.Points.Count) return false;
+            List<int> pOne = cellOne.Points.ConvertAll(x => x), pTwo = cellTwo.Points.ConvertAll(x => x);
 
-            List<int> cellPointsOne = new List<int>(cellOne.Points.Count), cellPointsTwo = new List<int>(cellTwo.Points.Count);
-            cellPointsOne.AddRange(cellOne.Points.Select(x => x));
-            cellPointsTwo.AddRange(cellTwo.Points.Select(x => x));
-
-            cellPointsOne.Sort();
-            cellPointsTwo.Sort();
-
-            for(int a = 0; a < cellPointsOne.Count; a++) if (cellPointsOne[a] != cellPointsTwo[a]) return false;
-
-            return true;
+            pOne.Sort();
+            pTwo.Sort();
+            
+            return pOne.SequenceEqual(pTwo);
         }
 
         public int GetHashCode(CellInt cell)
         {
-            int mod = cell.Points.Count * 17, result = 12;
 
-            foreach(int i in cell.Points) {
-                result *= mod * i;
-                mod -= 17;
+            unchecked {
+                List<int> points = cell.Points.ConvertAll(x => x);
+                points.Sort();
+
+                IHelper.List<int>.Log(points);
+                Debug.Log("-----");
+
+                int hash = 19;
+                foreach(int point in points) {
+                    hash *= 31 + point.GetHashCode();
+                }
+                return hash;
             }
-
-            return result;
         }
     }
 }

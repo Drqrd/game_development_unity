@@ -22,10 +22,14 @@ public class World : BaseObjectMono
     [SerializeField] private bool disableSphereTransformation;
     [Tooltip("Generates Triangles with unique colors depending on its type.")]
     [SerializeField] private bool colorTriangles;
-    [Tooltip("Disables Mesh Renderer on VoronoiSphere")]
-    [SerializeField] private bool disableVoronoiSphereMesh;
+    [Tooltip("Mesh Type for Sphere.cs")]
+    [SerializeField] private Sphere.DebugProperties.SphereMeshType displayedSphereMesh;
+    [Tooltip("Disables Mesh Renderers on Sphere.cs")]
+    [SerializeField] private bool disableSphereMesh;
+
 
     private Sphere voronoiSphere;
+    private Color[] testColors;
 
     private void Start()
     {
@@ -38,30 +42,12 @@ public class World : BaseObjectMono
 
         voronoiSphere = new Sphere(resolution, jitter, sphereDebugProperties);
 
-        voronoiSphere.CubeSphereMesh.transform.parent = this.transform;
+        voronoiSphere.MeshObject.transform.parent = this.transform;
         // voronoiSphere.VoronoiSphereMesh.transform.parent = this.transform;
     }
 
     private void GenerateDebugProperties(out Sphere.DebugProperties debugSphere)
     {
-        debugSphere = new Sphere.DebugProperties(colorTriangles, logVoronoiSphere, disableVoronoiSphereMesh, disableSphereTransformation);
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (Application.isPlaying)
-        {
-            Gizmos.color = Color.red;
-            /*
-            // Draws Test Edges
-            foreach (Edge e in voronoiSphere.testEdges)
-            {
-                Gizmos.DrawLine(e.A, e.B);
-            }
-            */
-            for(int a = 1; a < voronoiSphere.testCells[0].Vertices.Length; a++) {
-                Gizmos.DrawLine(voronoiSphere.testCells[0].Vertices[a], voronoiSphere.testCells[0].Vertices[a-1]);
-            }
-        }
+        debugSphere = new Sphere.DebugProperties(colorTriangles, logVoronoiSphere, displayedSphereMesh, disableSphereMesh, disableSphereTransformation);
     }
 }

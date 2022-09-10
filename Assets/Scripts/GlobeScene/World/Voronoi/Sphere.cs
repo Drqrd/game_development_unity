@@ -17,13 +17,8 @@ namespace Generation.Voronoi
         private DebugColors debugColors;
         private DebugProperties debugProperties;
 
-        public GameObject CubeSphereMesh { get; private set; }
-        public GameObject VoronoiSphereMesh { get; private set; }
-        public Cell VoronoiCells { get; private set; }
-
-        public Edge[] testEdges { get; private set; }
-        public Cell[] testCells { get; private set; }
-        public Triangle[] tObjs { get; private set; }
+        public GameObject MeshObject { get; private set; }
+        public Cell[] VoronoiCells { get; private set; }
 
         public Sphere(int resolution, float jitter, DebugProperties debugProperties)
         {
@@ -32,6 +27,8 @@ namespace Generation.Voronoi
             this.debugProperties = debugProperties;
 
             this.directions = new Vector3[6] { Vector3.forward, Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.back };
+
+            this.MeshObject = new GameObject("Sphere Mesh");
 
             Generate();
         }
@@ -46,7 +43,7 @@ namespace Generation.Voronoi
             Color[] colors;
 
             GetVerticesAndTriangles(out triangleObjs, out vertices, out colors);
-            GetVoronoiCells(triangleObjs, vertices);
+            GetVoronoiCells(triangleObjs);
             BuildGameObjects(vertices, triangles, triangleObjs, colors);
         }
 
@@ -611,112 +608,223 @@ namespace Generation.Voronoi
             }
         }
 
-        private void GetVoronoiCells(Triangle[] tObjs, Vector3[] vs)
+        private void GetVoronoiCells(Triangle[] tObjs)
         {
+
             TryLogStart("GetVoronoiCells()");
+            
+            HashSet<int[]> dcelEdgeSet = new HashSet<int[]>(new HalfEdge.HalfEdgeCompare());
 
-            // Approach:
-            // Given an edge, there are two voronoi cells.
-            // Each vertex has 3 edges attached to it
-            // When looping thorough edges, the smallest signed angle (angle that has a + cross product with the previous normal vector)
-            // - is the next edge of the cell 
-            // Somehow remove edges / vertexes from a list when all cells associated with them are found
-            List<Edge> voronoiEdges = new List<Edge>();
-            HashSet<EdgeInt> map = new HashSet<EdgeInt>(new EdgeIntCompareEdge());
-            Dictionary<CellInt, int> cellIntHashSet = new Dictionary<CellInt, int>(new CellIntCompareSegments());
-            Dictionary<int, List<int>> vertexAdjacencyGraph = new Dictionary<int, List<int>>();
-            foreach(Triangle t in tObjs)
-            {
-                vertexAdjacencyGraph.Add(t.Index, new List<int>());
-                foreach(Triangle n in t.Neighbors)
-                {
-                    vertexAdjacencyGraph[t.Index].Add(n.Index);
+            int cnt = 0;
+            foreach(Triangle t in tObjs) {
+                foreach(Triangle n in t.Neighbors) {
+                    int[] key = new int[2];
 
-                    EdgeInt e = new EdgeInt(t.Index, n.Index);
-                    if (!map.Contains(e))
-                    {
-                        voronoiEdges.Add(new Edge(t.Centroid, n.Centroid));
-                        map.Add(e);
+                    key[0] = t.Index < n.Index ? t.Index : n.Index;
+                    key[1] = key[0] == t.Index ? n.Index : t.Index;
+
+                    if (!dcelEdgeSet.Contains(key)) {
+                        dcelEdgeSet.Add(key);
                     }
+                    cnt++;
                 }
             }
 
-            Debug.Log(voronoiEdges.Count);
+            // Debug.Log("total: " + cnt);
+            // Debug.Log("set: " + dcelEdgeSet.Count);
 
-            testEdges = voronoiEdges.ToArray();
+            int[][] dcelEdgeArr = dcelEdgeSet.ToArray();
 
-            TryLogElapsed("Voronoi Edges Generated");
+            Dictionary<int[],HalfEdge> dcelDict = new Dictionary<int[],HalfEdge>( new HalfEdge.HalfEdgeCompare());
 
-            List<Cell> voronoiCellList = new List<Cell>();
+            foreach(int[] key in dcelEdgeArr) {
+                int[] selfKey = new int[2], twinKey = new int[2];
 
-            for(int a = 0; a < vertexAdjacencyGraph.Count; a++) {
-                List<int> start = new List<int>(1);
-                start.Add(a);
-                RecurseFindCells(start, 1);
+                selfKey[0] = key[0];
+                selfKey[1] = key[1];
+                twinKey[0] = key[1];
+                twinKey[1] = key[0];
+
+                int k0 = selfKey[0], k1 = selfKey[1];
+
+                Triangle key0 = tObjs[key[0]];
+                Triangle key1 = tObjs[key[1]];
+
+                Triangle[] nextTriangles = key1.Neighbors.Where(neighbor => neighbor.Index != key0.Index).ToArray();
+                Triangle[] prevTriangles = key0.Neighbors.Where(neighbor => neighbor.Index != key1.Index).ToArray();
+
+                int selfNextIndex = DetermineSide(key0.Centroid, key1.Centroid, nextTriangles[0].Centroid) > 0 ? 0 : 1;
+                int twinPrevIndex = selfNextIndex == 0 ? 1 : 0;
+
+                int selfPrevIndex = DetermineSide(key1.Centroid, key0.Centroid, prevTriangles[0].Centroid) < 0 ? 0 : 1;
+                int twinNextIndex = selfPrevIndex == 0 ? 1 : 0;
+ 
+                int[] selfNextKey = new int[2], selfPrevKey = new int[2], twinNextKey = new int[2], twinPrevKey = new int[2];
+                selfNextKey[0] = key1.Index;
+                selfNextKey[1] = nextTriangles[selfNextIndex].Index;
+                twinPrevKey[0] = nextTriangles[twinPrevIndex].Index;
+                twinPrevKey[1] = key1.Index;
+
+                twinNextKey[0] = key0.Index;
+                twinNextKey[1] = prevTriangles[twinNextIndex].Index;
+                selfPrevKey[0] = prevTriangles[selfPrevIndex].Index;
+                selfPrevKey[1] = key0.Index;
+    
+                // Check if current edge exists in dictionary
+                if (!dcelDict.ContainsKey(selfKey)) {
+                    dcelDict.Add(selfKey, new HalfEdge(k0,k1));
+                }
+                // Check if current edge next is assigned
+                if (dcelDict[selfKey].NextEdge == null) {
+                    if (!dcelDict.ContainsKey(selfNextKey)) {
+                        dcelDict.Add(selfNextKey, new HalfEdge(selfNextKey[0],selfNextKey[1]));
+                    }
+                    dcelDict[selfKey].NextEdge = dcelDict[selfNextKey];
+                }
+                // Check if next edge prev is assigned
+                if (dcelDict[selfNextKey].PrevEdge == null) {
+                    dcelDict[selfNextKey].PrevEdge = dcelDict[selfKey];
+                }
+                if (dcelDict[selfKey].PrevEdge == null) {
+                    if (!dcelDict.ContainsKey(selfPrevKey)) {
+                        dcelDict.Add(selfPrevKey, new HalfEdge(selfPrevKey[0],selfPrevKey[1]));
+                    }
+                    dcelDict[selfKey].PrevEdge = dcelDict[selfPrevKey];
+                }
+                if (dcelDict[selfPrevKey].NextEdge == null) {
+                    dcelDict[selfPrevKey].NextEdge = dcelDict[selfKey];
+                }
+
+                // Same but with twin keys
+                if (!dcelDict.ContainsKey(twinKey)) {
+                    dcelDict.Add(twinKey, new HalfEdge(k1,k0));
+                }
+                if (dcelDict[twinKey].PrevEdge == null) {
+                    if (!dcelDict.ContainsKey(twinPrevKey)) {
+                        dcelDict.Add(twinPrevKey, new HalfEdge(twinPrevKey[0],twinPrevKey[1]));
+                    }
+                    dcelDict[twinKey].PrevEdge = dcelDict[twinPrevKey];
+                }
+                if (dcelDict[twinPrevKey].NextEdge == null) {
+                    dcelDict[twinPrevKey].NextEdge = dcelDict[twinKey];
+                }
+                if (dcelDict[twinKey].NextEdge == null) {
+                    if (!dcelDict.ContainsKey(twinNextKey)) {
+                        dcelDict.Add(twinNextKey, new HalfEdge(twinNextKey[0], twinNextKey[1]));
+                    }
+                    dcelDict[twinKey].NextEdge = dcelDict[twinNextKey];
+                }
+                if (dcelDict[twinNextKey].PrevEdge == null) {
+                    dcelDict[twinNextKey].PrevEdge = dcelDict[twinKey];
+                }
+
+                if (dcelDict[selfKey].TwinEdge == null) {
+                    dcelDict[selfKey].TwinEdge = dcelDict[twinKey];
+                }
+                if (dcelDict[twinKey].TwinEdge == null) {
+                    dcelDict[twinKey].TwinEdge = dcelDict[selfKey];
+                }
             }
 
-            Debug.Log("CellIntCount " + cellIntHashSet.Count);
+            HalfEdge[] dcel = dcelDict.Values.ToArray();
 
-            CellInt[] cellInts = cellIntHashSet.Keys.ToArray();
+            TryLogElapsed("DCEL Generated");
+            
+            List<Cell> voronoiCells = new List<Cell>();
+            LinkedList<List<HalfEdge>> voronoiPartials = new LinkedList<List<HalfEdge>>();
 
-            Debug.Log(vs.Length);
+            voronoiPartials.AddFirst(new List<HalfEdge>());
+            voronoiPartials.First().Add(dcel[0]);
 
-            foreach(CellInt cellInt in cellInts) {
-                Vector3[] cellVs = new Vector3[cellInt.Points.Count];
-                for(int a = 0; a < cellInt.Points.Count; a++) {
-                    try {
-                        cellVs[a] = vs[cellInt.Points[a]];
+            voronoiPartials.AddLast(new List<HalfEdge>());
+            voronoiPartials.Last().Add(dcel[0].TwinEdge);
+
+            dcelEdgeSet.Clear();
+
+            /*
+            foreach(HalfEdge halfEdge in dcel) {
+                Debug.Log(halfEdge.A + ", " + halfEdge.B);
+                if (halfEdge.NextEdge == null) {
+                    Debug.Log("NextEdge null");
+                }
+                if (halfEdge.PrevEdge == null) {
+                    Debug.Log("PrevEdge null");
+                }
+            }
+            */
+
+            while(voronoiPartials.Count > 0) {
+                List<HalfEdge> currentPartial = voronoiPartials.First();
+
+                int[] key = new int[2];
+                key[0] = currentPartial.Last().A;
+                key[1] = currentPartial.Last().B;    
+                
+                // Debug.Log(currentPartial.Last().A + ", " + currentPartial.Last().B);
+                // Debug.Log("NextEdge: " + currentPartial.Last().NextEdge.A + ", " + currentPartial.Last().NextEdge.B);
+                // Debug.Log("PrevEdge: " + currentPartial.Last().PrevEdge.A + ", " + currentPartial.Last().PrevEdge.B);
+                // Debug.Log("TwinEdge: " + currentPartial.Last().TwinEdge.A + ", " + currentPartial.Last().TwinEdge.B);
+                
+                if (!dcelEdgeSet.Contains(key)) {
+                    // If cell completed
+                    if (currentPartial.Last().NextEdge.B == currentPartial.First().A) {
+                        List<Vector3> cellPts = new List<Vector3>();
+                        foreach(HalfEdge edge in currentPartial) {
+                            cellPts.Add(tObjs[edge.A].Centroid);
+                            int[] keyToAdd = new int[2];
+                            keyToAdd[0] = edge.A;
+                            keyToAdd[1] = edge.B;
+                            dcelEdgeSet.Add(keyToAdd);
+                        }
+                        cellPts.Add(tObjs[currentPartial.Last().NextEdge.A].Centroid);
+
+                        voronoiCells.Add(new Cell(cellPts.ToArray()));
                     }
-                    catch {
-                        Debug.Log("------" + cellInt.Points[a]);
+                    else {
+                        voronoiPartials.First().Add(currentPartial.Last().NextEdge);
+                        int[] twinKey = new int[2];
+                        twinKey[0] = currentPartial.Last().TwinEdge.A;
+                        twinKey[1] = currentPartial.Last().TwinEdge.B;
+                        if (!dcelEdgeSet.Contains(twinKey)) {
+                            voronoiPartials.AddLast(new List<HalfEdge>());
+                            voronoiPartials.Last().Add(currentPartial.Last().NextEdge.TwinEdge);
+                        }
                     }
                 }
-                voronoiCellList.Add(new Cell(cellVs));
+                else {
+                    voronoiPartials.RemoveFirst();
+                }
             }
 
-            Debug.Log("Points");
-            foreach(int a in cellInts[0].Points) Debug.Log(a);
+            VoronoiCells = voronoiCells.ToArray();
 
             TryLogElapsed("Voronoi Cell Objects Generated");
 
-            testCells = voronoiCellList.ToArray();
+            // Debug.Log("VoronoiCell Length: " + voronoiCells.Count);
+            // Debug.Log("TriangleObj Length: " + tObjs.Length);
 
             TryLogEnd();
 
             // LOCAL FUNCTIONS
-            void RecurseFindCells(List<int> currentCellPartial, int step) {
-                List<int> adjacentPoints = vertexAdjacencyGraph[currentCellPartial.Last()];
-                for(int a = 0; a < adjacentPoints.Count; a++) {
-                    if (step + 1 < 7) {
-                        if (step > 1) {
-                            List<int> nextCellPartial = new List<int>(currentCellPartial.Count + 1);
-                            foreach(int v in currentCellPartial) if (v != currentCellPartial[currentCellPartial.Count - 2]) nextCellPartial.Add(v);
-                            nextCellPartial.Add(adjacentPoints[a]);
-                            RecurseFindCells(nextCellPartial, step + 1);
-                        }
-                        else {
-                            List<int> nextCellPartial = new List<int>(currentCellPartial.Count + 1);
-                            foreach(int v in currentCellPartial) nextCellPartial.Add(v);
-                            nextCellPartial.Add(adjacentPoints[a]);
-                            RecurseFindCells(nextCellPartial, step + 1);
-                        }
-                    }
-                    else if (currentCellPartial[0] == currentCellPartial.Last()) {
-                        CellInt newCell = new CellInt(currentCellPartial);
-                        if (!cellIntHashSet.ContainsKey(newCell)) cellIntHashSet.Add(newCell, 1);
-                    }
-                }
+
+           float DetermineSide(Vector3 b, Vector3 c, Vector3 x) {
+                // https://math.stackexchange.com/questions/214187/point-on-the-left-or-right-side-of-a-plane-in-3d-space
+                // Original documentation states the 1st point A should be subtracted from
+                // the other points, but since A would be Vector3.zero, not needed.
+                
+                // Gets determinant from the points
+                return Mathf.Sign(b.x * c.y * x.z + b.y * c.z * x.x + b.z * c.x * x.y - b.z * c.y * x.x - b.y * c.x * x.z - b.x * c.z * x.y);
             }
         }
 
         private void BuildGameObjects(Vector3[] vertices, int[] triangles, Triangle[] tObjs, Color[] colors)
         {
-            CubeSphereMesh = new GameObject("CubeSphereMesh");
+            GameObject cubeSphereMesh = new GameObject("Cube Sphere Mesh");
+            cubeSphereMesh.transform.parent = MeshObject.transform;
 
-            for(int tIndex = 0; tIndex < tObjs.Length; tIndex++)
-            {
+            for(int tIndex = 0; tIndex < tObjs.Length; tIndex++) {
                 GameObject tObj = new GameObject("Triangle " + tIndex);
-                tObj.transform.parent = CubeSphereMesh.transform;
+                tObj.transform.parent = cubeSphereMesh.transform;
 
                 MeshFilter meshFilter = tObj.AddComponent<MeshFilter>();
                 Mesh mesh = new Mesh();
@@ -736,8 +844,50 @@ namespace Generation.Voronoi
 
                 meshRenderer.enabled = !debugProperties.disableSphereMesh;
 
-                DebugTriangle dt = tObj.AddComponent<DebugTriangle>();
-                dt.Neighbors = tObjs[tIndex].Neighbors;
+                // DebugTriangle dt = tObj.AddComponent<DebugTriangle>();
+                // dt.Neighbors = tObjs[tIndex].Neighbors;
+            }
+
+            GameObject voronoiSphereMesh = new GameObject("Voronoi Sphere Mesh");
+            voronoiSphereMesh.transform.parent = MeshObject.transform;
+            
+            for(int vIndex = 0; vIndex < VoronoiCells.Length; vIndex++) {
+                GameObject vObj = new GameObject("Voronoi Cell " + vIndex);
+                vObj.transform.parent = voronoiSphereMesh.transform;
+
+                MeshFilter meshFilter = vObj.AddComponent<MeshFilter>();
+                Mesh mesh = new Mesh();
+                Color[] clrs = new Color[VoronoiCells[vIndex].TVertices.Length];
+                Color randColor = UnityEngine.Random.ColorHSV();
+                for(int a = 0; a < clrs.Length; a++) {
+                    clrs[a] = randColor;
+                }
+                mesh.vertices = VoronoiCells[vIndex].TVertices;
+                mesh.triangles = VoronoiCells[vIndex].Triangles;
+                mesh.colors = clrs;
+                
+                meshFilter.sharedMesh = mesh;
+                meshFilter.sharedMesh.RecalculateNormals();
+
+                MeshRenderer meshRenderer = vObj.AddComponent<MeshRenderer>();
+                meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
+
+                meshRenderer.enabled = !debugProperties.disableSphereMesh;
+
+                // DebugCell dt = vObj.AddComponent<DebugCell>();
+                // dt.Vertices = VoronoiCells[vIndex].Vertices;
+            }
+
+            switch (debugProperties.displayedSphereMesh) {
+                case DebugProperties.SphereMeshType.cubeSphereMesh: 
+                    voronoiSphereMesh.gameObject.SetActive(false);
+                    break;
+                case DebugProperties.SphereMeshType.voronoiSphereMesh:
+                    cubeSphereMesh.gameObject.SetActive(false);
+                    break;
+                default:
+                    Debug.LogError("SphereMeshType INCORRECT ENUM VALUE");
+                    break;
             }
         }
 
@@ -778,16 +928,23 @@ namespace Generation.Voronoi
 
         public struct DebugProperties
         {
+            public enum SphereMeshType {
+                cubeSphereMesh,
+                voronoiSphereMesh
+            }
+
             public bool colorTriangles { get; private set; }
             public bool logTime { get; private set; }
+            public SphereMeshType displayedSphereMesh {get; private set;}
             public bool disableSphereMesh { get; private set; }
             public bool disableSphereTransformation { get; private set; }
 
-            public DebugProperties(bool ct, bool lt, bool dsm, bool dst)
+            public DebugProperties(bool ct, bool lt, SphereMeshType displaySm, bool disableSm, bool dst)
             {
                 colorTriangles = ct;
                 logTime = lt;
-                disableSphereMesh = dsm;
+                displayedSphereMesh = displaySm;
+                disableSphereMesh = disableSm;
                 disableSphereTransformation = dst;
             }
         }
@@ -806,6 +963,37 @@ namespace Generation.Voronoi
             Color[] vertexColorSet = new Color[9] { Color.red, Color.blue, Color.yellow, Color.green, Color.magenta, Color.cyan, new Color(1, .4f, 0), Color.black, Color.white };
 
             debugColors = new DebugColors(vertexColorSet, triangleColorSet, faceColorSet);
+        }
+    }
+
+    class HalfEdge {
+        public int A { get; private set; }
+        public int B { get; private set; }
+        public int Face { get; set; }
+        public HalfEdge PrevEdge { get; set; }
+        public HalfEdge TwinEdge { get; set; }
+        public HalfEdge NextEdge { get; set; }
+        public HalfEdge(int a, int b) {
+
+            this.A = a;
+            this.B = b;
+
+            this.PrevEdge = null;
+            this.TwinEdge = null;
+            this.NextEdge = null;
+        }
+
+        public sealed class HalfEdgeCompare : IEqualityComparer<int[]>
+        {
+            public bool Equals(int[] edgeOne, int[] edgeTwo) {
+                return edgeOne[0] == edgeTwo[0] && edgeOne[1] == edgeTwo[1];
+            }
+
+            // Cantor pairing function
+            // https://en.wikipedia.org/wiki/Pairing_function
+            public int GetHashCode(int[] edge) {
+                return (int)(0.5f * (edge[0] + edge[1]) * (edge[0] + edge[1] + 1) + edge[1]);
+            }
         }
     }
 }
