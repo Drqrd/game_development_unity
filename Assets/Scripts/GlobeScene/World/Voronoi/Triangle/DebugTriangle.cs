@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Generation.Voronoi
+namespace Generation.Voronoi.Debug
 {
-    public class DebugTriangle : MonoBehaviour
+    public class Triangle : MonoBehaviour
     {
-        public List<Triangle> Neighbors { get; set; }
+        public List<Voronoi.Triangle> Neighbors { get; set; }
 
         private void OnDrawGizmosSelected()
         {
