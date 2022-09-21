@@ -30,7 +30,7 @@ namespace Generation.Voronoi
         public static void Log(Edge e)
         {
             #if UNITY_EDITOR
-            Debug.Log($"Edge - A: {e.A}, B: {e.B}");
+            UnityEngine.Debug.Log($"Edge - A: {e.A}, B: {e.B}");
             #endif
         }
     }
