@@ -1,19 +1,18 @@
 using UnityEngine;
 
-namespace Generation.Voronoi {
-    public class DebugCell : MonoBehaviour
+namespace Generation.Voronoi.Debug {
+    public class Cell : MonoBehaviour
     {
         // Start is called before the first frame update
-        public Vector3[] Vertices { get; set; }
+        public Voronoi.Cell cell { get; set; }
         private void OnDrawGizmosSelected()
         {
             if (Application.isPlaying)
             {
                 Gizmos.color = Color.red;
-                for(int b = 1; b < Vertices.Length;b++) {
-                    Gizmos.DrawLine(Vertices[b], Vertices[b-1]);
+                for(int b = 0; b < cell.Neighbors.Length;b++) {
+                    Gizmos.DrawSphere(cell.Neighbors[b].Center, 0.01f);
                 }
-                Gizmos.DrawLine(Vertices[Vertices.Length - 1], Vertices[0]);
             }
         }
     }
