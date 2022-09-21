@@ -1,5 +1,7 @@
 using UnityEngine;
 
+using static Generation.Data;
+
 namespace Generation.Voronoi
 {
     public class Cell
@@ -8,15 +10,27 @@ namespace Generation.Voronoi
         public Vector3[] Vertices { get; private set; }
         public Vector3[] TVertices { get; private set; }
         public int[] Triangles { get; private set; }
-        public Cell Neighbors { get; set; }
-
-        public Cell(Vector3[] vertices)
+        public int Index { get; private set; }
+        public Cell[] Neighbors { get; set; }
+        public Plate Plate { get; set; }
+        public Mesh MeshRef { get; set; }
+        public GenerationValues Properties { get; private set; }
+        
+        public Cell(Vector3[] vertices, int index)
         {
             Vertices = vertices;
+            Index = index;
 
             Center = GetCenter();
             TVertices = GetTVertices();
             Triangles = Triangulate();
+
+            Properties = new GenerationValues();
+        }
+        public static void Log(Cell c) {
+            #if UNITY_EDITOR
+            UnityEngine.Debug.Log(c);
+            #endif
         }
 
         private Vector3 GetCenter()
@@ -66,6 +80,19 @@ namespace Generation.Voronoi
             triangles[triangles.Length - 1] = sign > 0 ? 1 : Vertices.Length;
             return triangles;
         }
+        
+        public class GenerationValues {
+            public float Height { get; set; }
+            public float Temperature { get; set; }
+            public float Humidity { get; set; }
+            public BiomeType Biome { get; set; }
+
+            public GenerationValues() {
+                Height = -1f;
+                Temperature = -1f;
+                Humidity = -1f;
+            }
+        } 
     }
 }
 
