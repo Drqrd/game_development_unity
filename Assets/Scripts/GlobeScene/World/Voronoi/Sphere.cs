@@ -14,29 +14,30 @@ namespace Generation.Voronoi
         private int resolution;
         private float jitter;
         private Vector3[] directions;
-        private DebugColors debugColors;
-        private DebugProperties debugProperties;
+        private Debug.SphereProperties debugProperties;
+        private Debug.SphereProperties.SphereMeshType initialSphereMesh;
 
         public GameObject MeshObject { get; private set; }
-        public Cell[] VoronoiCells { get; private set; }
-
-        public Sphere(int resolution, float jitter, DebugProperties debugProperties)
+        public Voronoi.Cell[] Cells { get; private set; }
+        public Plate[] Plates { get; set; }
+        public Sphere(int resolution, float jitter, Debug.SphereProperties debugProperties)
         {
             this.resolution = resolution;
-            this.jitter = jitter;
+            this.jitter = (jitter / 3f) * (1f / (resolution - 1));
             this.debugProperties = debugProperties;
+            this.initialSphereMesh = debugProperties.DisplayedMesh;
 
             this.directions = new Vector3[6] { Vector3.forward, Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.back };
 
             this.MeshObject = new GameObject("Sphere Mesh");
+
+            debugTimeTracker = (debugProperties.LogTime) ? new TimeTracker() : null;
 
             Generate();
         }
 
         private void Generate()
         {
-            BuildDebug();
-
             Vector3[] vertices = new Vector3[] { };
             int[] triangles = new int[] { };
             Triangle[] triangleObjs;
@@ -46,7 +47,6 @@ namespace Generation.Voronoi
             GetVoronoiCells(triangleObjs);
             BuildGameObjects(vertices, triangles, triangleObjs, colors);
         }
-
 
         // Constructs a flattened cube sphere mesh
         // Assigns neighbors here using adjacency matrix
@@ -61,13 +61,12 @@ namespace Generation.Voronoi
             List<Triangle> tObjs = new List<Triangle>();
             // Generate Vertices and Triangles
             // For each direction
-
             int index = 0, vIndex = 0;
             for (int f = 0; f < directions.Length; f++)
             {
-                Vector3 localUp = directions[f];
-                
+                Vector3 localUp = directions[f];    
                 Vector3 axisA;
+
                 if (localUp == Vector3.forward) axisA = Vector3.left;
                 else if (localUp == Vector3.up) axisA = Vector3.left;
                 else if (localUp == Vector3.down) axisA = Vector3.left;
@@ -76,7 +75,6 @@ namespace Generation.Voronoi
                 else axisA = Vector3.right;
 
                 Vector3 axisB = Vector3.Cross(localUp,axisA);
-
                 for (int y = 0; y < resolution; y++)
                 {
                     for (int x = 0; x < resolution; x++)
@@ -84,8 +82,7 @@ namespace Generation.Voronoi
                         // Vertex generation
                         Vector2 percent = new Vector2(x, y) / (resolution - 1);
                         Vector3 pointOnCube = localUp + (percent.x - .5f) * 2f * axisA + (percent.y - .5f) * 2f * axisB;
-                        Vector3 pointOnSphere = debugProperties.disableSphereTransformation ? pointOnCube : PointOnCubeToPointOnSphere(pointOnCube);
-
+                        Vector3 pointOnSphere = !debugProperties.ConvertToSphere ? pointOnCube : PointOnCubeToPointOnSphere(pointOnCube);
                         vs.Add(pointOnSphere);
                         
 
@@ -150,7 +147,7 @@ namespace Generation.Voronoi
                     if (triIndex == trianglesAcross - 1)
                     {
                         // Self - Debug Coloring
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[0]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[0]);
 
                         // Forward
                         if (currentFace == 0)
@@ -223,7 +220,7 @@ namespace Generation.Voronoi
                     else if (triIndex == trianglesPerFace - trianglesAcross)
                     {
                         // Self - Debug Coloring
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[1]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[1]);
 
                         // Forward
                         if (currentFace == 0)
@@ -295,7 +292,7 @@ namespace Generation.Voronoi
                     else if (triIndex < trianglesAcross && IMathf.IsOdd(triIndex))
                     {
                         // Self - Debug Coloring
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[2]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[2]);
 
                         // Forward
                         if (currentFace == 0)
@@ -366,7 +363,7 @@ namespace Generation.Voronoi
                     else if (triIndex % trianglesAcross == 0)
                     {
                         // Self
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[3]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[3]);
 
                         // Forward
                         if (currentFace == 0)
@@ -438,7 +435,7 @@ namespace Generation.Voronoi
                     else if (triIndex % trianglesAcross == trianglesAcross - 1)
                     {
                         // Self - Debug Coloring
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[4]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[4]);
 
                         // Forward
                         if (currentFace == 0)
@@ -510,7 +507,7 @@ namespace Generation.Voronoi
                     else if (triIndex > lastRow && IMathf.IsEven(triIndex))
                     {
                         // Self - Debug Coloring
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[5]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[5]);
 
                         // Forward
                         if (currentFace == 0)
@@ -582,7 +579,7 @@ namespace Generation.Voronoi
                     else if (IMathf.IsEven(triIndex))
                     {
                         // Self
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[6]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[6]);
 
                         // Interior Top Neighbor
                         ts[trianglesPerFace * currentFace + triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex + 1]);
@@ -595,7 +592,7 @@ namespace Generation.Voronoi
                     else
                     {
                         // Self
-                        if (debugProperties.colorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugColors.TriangleColorSet[7]);
+                        if (debugProperties.ColorTriangles) for (int col = 0; col < 3; col++) cs.Add(debugProperties.Colors.TriangleColorSet[7]);
                         // Interior Top Neighbor
                         ts[trianglesPerFace * currentFace + triIndex].Neighbors.Add(ts[trianglesPerFace * currentFace + triIndex - trianglesAcross - 1]);
                         // Interior Right Neighbor
@@ -610,9 +607,8 @@ namespace Generation.Voronoi
 
         private void GetVoronoiCells(Triangle[] tObjs)
         {
-
             TryLogStart("GetVoronoiCells()");
-            
+
             HashSet<int[]> dcelEdgeSet = new HashSet<int[]>(new HalfEdge.HalfEdgeCompare());
 
             int cnt = 0;
@@ -637,6 +633,7 @@ namespace Generation.Voronoi
 
             Dictionary<int[],HalfEdge> dcelDict = new Dictionary<int[],HalfEdge>( new HalfEdge.HalfEdgeCompare());
 
+            // Generate DCEL
             foreach(int[] key in dcelEdgeArr) {
                 int[] selfKey = new int[2], twinKey = new int[2];
 
@@ -725,11 +722,11 @@ namespace Generation.Voronoi
                     dcelDict[twinKey].TwinEdge = dcelDict[selfKey];
                 }
             }
-
             HalfEdge[] dcel = dcelDict.Values.ToArray();
 
             TryLogElapsed("DCEL Generated");
             
+            List<HalfEdge[]> completedVoronoiCells = new List<HalfEdge[]>();
             List<Cell> voronoiCells = new List<Cell>();
             LinkedList<List<HalfEdge>> voronoiPartials = new LinkedList<List<HalfEdge>>();
 
@@ -740,19 +737,8 @@ namespace Generation.Voronoi
             voronoiPartials.Last().Add(dcel[0].TwinEdge);
 
             dcelEdgeSet.Clear();
-
-            /*
-            foreach(HalfEdge halfEdge in dcel) {
-                Debug.Log(halfEdge.A + ", " + halfEdge.B);
-                if (halfEdge.NextEdge == null) {
-                    Debug.Log("NextEdge null");
-                }
-                if (halfEdge.PrevEdge == null) {
-                    Debug.Log("PrevEdge null");
-                }
-            }
-            */
-
+            
+            // Generate Voronoi Cells
             while(voronoiPartials.Count > 0) {
                 List<HalfEdge> currentPartial = voronoiPartials.First();
 
@@ -768,17 +754,20 @@ namespace Generation.Voronoi
                 if (!dcelEdgeSet.Contains(key)) {
                     // If cell completed
                     if (currentPartial.Last().NextEdge.B == currentPartial.First().A) {
-                        List<Vector3> cellPts = new List<Vector3>();
+                        
+                        //List<int> cellPts = new List<int>();
                         foreach(HalfEdge edge in currentPartial) {
-                            cellPts.Add(tObjs[edge.A].Centroid);
+                            //cellPts.Add(edge.A);
                             int[] keyToAdd = new int[2];
                             keyToAdd[0] = edge.A;
                             keyToAdd[1] = edge.B;
                             dcelEdgeSet.Add(keyToAdd);
                         }
-                        cellPts.Add(tObjs[currentPartial.Last().NextEdge.A].Centroid);
-
-                        voronoiCells.Add(new Cell(cellPts.ToArray()));
+                        //cellPts.Add(currentPartial.Last().NextEdge.A);
+                        //voronoiCellInts.Add(cellPts.ToArray());
+                        currentPartial.Add(currentPartial.Last().NextEdge);
+                        completedVoronoiCells.Add(currentPartial.ToArray());
+                        voronoiPartials.RemoveFirst();
                     }
                     else {
                         voronoiPartials.First().Add(currentPartial.Last().NextEdge);
@@ -796,9 +785,53 @@ namespace Generation.Voronoi
                 }
             }
 
-            VoronoiCells = voronoiCells.ToArray();
-
             TryLogElapsed("Voronoi Cell Objects Generated");
+            
+            if (jitter > 0f) {
+                foreach(Triangle t in tObjs) {
+                    t.RandomizeCentroid(jitter);
+                }
+
+                TryLogElapsed("Added Jitter to Voronoi Cell Points");
+            }
+
+            int cellIndex = 0;
+            foreach(HalfEdge[] halfEdgeGroup in completedVoronoiCells) {
+                foreach(HalfEdge halfEdge in halfEdgeGroup) {
+                    halfEdge.Face = cellIndex;
+                }
+                cellIndex++;
+            }
+            
+            int index = 0;
+            foreach(HalfEdge[] halfEdgeGroup in completedVoronoiCells) {
+                Vector3[] vs = new Vector3[halfEdgeGroup.Length];
+                
+                for(int a = 0; a < halfEdgeGroup.Length; a++) {
+                    vs[a] = tObjs[halfEdgeGroup[a].A].Centroid;
+                }
+                voronoiCells.Add(new Cell(vs, index));
+                index++;
+            }
+            
+            index = 0;
+            foreach(HalfEdge[] halfEdgeGroup in completedVoronoiCells) {
+                HashSet<int> neighbors = new HashSet<int>();
+                for(int a = 0; a < halfEdgeGroup.Length; a++) {
+                    neighbors.Add(halfEdgeGroup[a].TwinEdge.Face);
+                }
+                Cell[] actualNeighbors = new Cell[neighbors.Count];
+                int[] n = neighbors.ToArray();
+                for(int a = 0; a < n.Length; a++) {
+                    actualNeighbors[a] = voronoiCells[n[a]];
+                }
+                voronoiCells[index].Neighbors = actualNeighbors;
+                index++;
+            }
+
+            Cells = voronoiCells.ToArray();
+
+            TryLogElapsed("Voronoi Cell Data Assigned");
 
             // Debug.Log("VoronoiCell Length: " + voronoiCells.Count);
             // Debug.Log("TriangleObj Length: " + tObjs.Length);
@@ -834,7 +867,7 @@ namespace Generation.Voronoi
                 Vector3 triangleSurfaceNormal = Vector3.Cross(pts[2] - pts[0], pts[1] - pts[0]);
 
                 mesh.triangles = Vector3.Dot(pts[0], triangleSurfaceNormal) < 0 ? new int[3] { 0, 1, 2 } : new int[3] { 0, 2, 1 };
-                if (debugProperties.colorTriangles) mesh.colors = new Color[3] { colors[tIndex * 3 + 0], colors[tIndex * 3 + 1], colors[tIndex * 3 + 2] };
+                if (debugProperties.ColorTriangles) mesh.colors = new Color[3] { colors[tIndex * 3 + 0], colors[tIndex * 3 + 1], colors[tIndex * 3 + 2] };
 
                 meshFilter.sharedMesh = mesh;
                 meshFilter.sharedMesh.RecalculateNormals();
@@ -842,51 +875,52 @@ namespace Generation.Voronoi
                 MeshRenderer meshRenderer = tObj.AddComponent<MeshRenderer>();
                 meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
 
-                meshRenderer.enabled = !debugProperties.disableSphereMesh;
+                meshRenderer.enabled = !debugProperties.DisableSphereMesh;
 
-                // DebugTriangle dt = tObj.AddComponent<DebugTriangle>();
-                // dt.Neighbors = tObjs[tIndex].Neighbors;
+                if (debugProperties.GenerateDebugTriangles) {
+                    Debug.Triangle dt = tObj.AddComponent<Debug.Triangle>();
+                    dt.Neighbors = tObjs[tIndex].Neighbors;
+                }
             }
 
             GameObject voronoiSphereMesh = new GameObject("Voronoi Sphere Mesh");
             voronoiSphereMesh.transform.parent = MeshObject.transform;
             
-            for(int vIndex = 0; vIndex < VoronoiCells.Length; vIndex++) {
+            for(int vIndex = 0; vIndex < Cells.Length; vIndex++) {
                 GameObject vObj = new GameObject("Voronoi Cell " + vIndex);
                 vObj.transform.parent = voronoiSphereMesh.transform;
 
                 MeshFilter meshFilter = vObj.AddComponent<MeshFilter>();
                 Mesh mesh = new Mesh();
-                Color[] clrs = new Color[VoronoiCells[vIndex].TVertices.Length];
-                Color randColor = UnityEngine.Random.ColorHSV();
-                for(int a = 0; a < clrs.Length; a++) {
-                    clrs[a] = randColor;
-                }
-                mesh.vertices = VoronoiCells[vIndex].TVertices;
-                mesh.triangles = VoronoiCells[vIndex].Triangles;
-                mesh.colors = clrs;
+
+                mesh.vertices = Cells[vIndex].TVertices;
+                mesh.triangles = Cells[vIndex].Triangles;
                 
                 meshFilter.sharedMesh = mesh;
                 meshFilter.sharedMesh.RecalculateNormals();
+                
+                Cells[vIndex].MeshRef = mesh;
 
                 MeshRenderer meshRenderer = vObj.AddComponent<MeshRenderer>();
                 meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
 
-                meshRenderer.enabled = !debugProperties.disableSphereMesh;
+                meshRenderer.enabled = !debugProperties.DisableSphereMesh;
 
-                // DebugCell dt = vObj.AddComponent<DebugCell>();
-                // dt.Vertices = VoronoiCells[vIndex].Vertices;
+                if (debugProperties.GenerateDebugCells) {
+                    Debug.Cell dt = vObj.AddComponent<Debug.Cell>();
+                    dt.cell = Cells[vIndex];
+                } 
             }
 
-            switch (debugProperties.displayedSphereMesh) {
-                case DebugProperties.SphereMeshType.cubeSphereMesh: 
+            switch (initialSphereMesh) {
+                case Debug.SphereProperties.SphereMeshType.triangulation: 
                     voronoiSphereMesh.gameObject.SetActive(false);
                     break;
-                case DebugProperties.SphereMeshType.voronoiSphereMesh:
+                case Debug.SphereProperties.SphereMeshType.voronoi:
                     cubeSphereMesh.gameObject.SetActive(false);
                     break;
                 default:
-                    Debug.LogError("SphereMeshType INCORRECT ENUM VALUE");
+                    UnityEngine.Debug.LogError("SphereMeshType INCORRECT ENUM VALUE");
                     break;
             }
         }
@@ -901,71 +935,11 @@ namespace Generation.Voronoi
             float y = p.y * Mathf.Sqrt(1 - (x2 + z2) / 2 + (x2 * z2) / 3);
             float z = p.z * Mathf.Sqrt(1 - (x2 + y2) / 2 + (x2 * y2) / 3);
 
-            return new Vector3(x, y, z);
-        }
-
-        /* ---------- DEBUG ---------- */
-
-        public struct DebugColors
-        {
-            /*
-            public Color[] VertexColorArray { get; private set; }
-            public Color[] TriangleColorArray { get; private set; }
-            public Color[] FaceColorArray { get; private set; }
-            */
-
-            public Color[] VertexColorSet { get; private set; }
-            public Color[] TriangleColorSet { get; private set; }
-            public Color[] FaceColorSet { get; private set; }
-
-            public DebugColors(Color[] vcs, Color[] tcs, Color[] fcs) // Color[] vca, Color[] tca, Color[] fca)
-            {
-                VertexColorSet = vcs;
-                TriangleColorSet = tcs;
-                FaceColorSet = fcs;
-            }
-        }
-
-        public struct DebugProperties
-        {
-            public enum SphereMeshType {
-                cubeSphereMesh,
-                voronoiSphereMesh
-            }
-
-            public bool colorTriangles { get; private set; }
-            public bool logTime { get; private set; }
-            public SphereMeshType displayedSphereMesh {get; private set;}
-            public bool disableSphereMesh { get; private set; }
-            public bool disableSphereTransformation { get; private set; }
-
-            public DebugProperties(bool ct, bool lt, SphereMeshType displaySm, bool disableSm, bool dst)
-            {
-                colorTriangles = ct;
-                logTime = lt;
-                displayedSphereMesh = displaySm;
-                disableSphereMesh = disableSm;
-                disableSphereTransformation = dst;
-            }
-        }
-
-        private void BuildDebug()
-        {
-            debugTimeTracker = (debugProperties.logTime) ? new TimeTracker() : null;
-
-            // Forward, Up, Down, Left, Right, Back
-            Color[] faceColorSet = new Color[6] { Color.white, Color.blue, Color.red, Color.yellow, Color.green, Color.gray };
-
-            // Start, End, Top, Left, Right, Down, InteriorEven, InteriorOdd
-            Color[] triangleColorSet = new Color[8] { Color.red, Color.blue, Color.yellow, Color.cyan, Color.magenta, Color.green, Color.white, Color.gray };
-
-            // CornerTopLeft, CornerTopRight, CornerBottomLeft, CornerBottomRight, Top, Left, Right, Bottom, Interior
-            Color[] vertexColorSet = new Color[9] { Color.red, Color.blue, Color.yellow, Color.green, Color.magenta, Color.cyan, new Color(1, .4f, 0), Color.black, Color.white };
-
-            debugColors = new DebugColors(vertexColorSet, triangleColorSet, faceColorSet);
+            return new Vector3(x, y, z).normalized;
         }
     }
 
+// CLASSES
     class HalfEdge {
         public int A { get; private set; }
         public int B { get; private set; }
