@@ -5,12 +5,12 @@ namespace Generation.Voronoi
 {
     public class Triangle
     {
-        public List<Triangle> Neighbors { get; set; }
+        public List<Triangle> Neighbors { get; set; } 
+        public Vector3 Centroid { get; private set; }
         public Edge A { get; private set; }
         public Edge B { get; private set; }
         public Edge C { get; private set; }
         public int Index { get; private set; }
-        public Vector3 Centroid { get; private set; }
         public Vector3[] Points { get; private set; }
 
         public Triangle(Vector3 a, Vector3 b, Vector3 c, int index)
@@ -30,15 +30,17 @@ namespace Generation.Voronoi
         public static void Log(Triangle t)
         {
             #if UNITY_EDITOR
-            Debug.Log($"- Triangle -");
-            Debug.Log($"Centroid: {t.Centroid}");
+            UnityEngine.Debug.Log($"- Triangle -");
+            UnityEngine.Debug.Log($"Centroid: {t.Centroid}");
             Edge.Log(t.A);
             Edge.Log(t.B);
             Edge.Log(t.C);
-            Debug.Log($"------------");
+            UnityEngine.Debug.Log($"------------");
             #endif
         }
-
+        public void RandomizeCentroid(float jitter) {
+            Centroid = (Centroid + Random.onUnitSphere * jitter).normalized;
+        }
         public static Vector3 GetCentroid(Vector3 v1, Vector3 v2, Vector3 v3)
         {
             return new Vector3((v1.x + v2.x + v3.x) / 3f, (v1.y + v2.y + v3.y) / 3f, (v1.z + v2.z + v3.z) / 3f);
