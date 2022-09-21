@@ -24,7 +24,7 @@ namespace Generation.Voronoi {
                 points.Sort();
 
                 IHelper.List<int>.Log(points);
-                Debug.Log("-----");
+                UnityEngine.Debug.Log("-----");
 
                 int hash = 19;
                 foreach(int point in points) {
