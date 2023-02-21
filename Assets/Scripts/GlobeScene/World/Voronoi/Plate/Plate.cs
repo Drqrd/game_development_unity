@@ -1,44 +1,41 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Generation.Voronoi {
     public class Plate
     {
         public Cell[] Cells { get; private set; }
         public Cell[][] Borders { get; private set; }
-        public Plate[] Neighbors { get; private set; }
+        public Plate[] Neighbors { get; set; }
         public int Index { get; private set; }
-        public PlateType Type { get; private set; }
+        public PlateType Type { get; set; }
         public Vector2 Direction { get; private set; }
         public float Speed { get; private set; }
         public Color[] debugColors { get; private set; }
 
         public enum PlateType {
             continental,
-            oceanic,
+            oceanic
         }
 
-        public Plate(Cell[] cells, int index, float oToCRatio) {
-            Plate[] neighbors = new Plate[0];
+        public Plate(Cell[] cells, int index, PlateType type) {
             Cells = cells;
-            Neighbors = neighbors;
             Index = index;
+            Type = type;
 
             // UnityEngine.Debug.Log(index);
 
             foreach(Cell cell in cells) {
                 cell.Plate = this;
             }
-
-            Type = Random.value <= oToCRatio ? PlateType.oceanic : PlateType.continental;
         
             Direction = new Vector2(Random.value,Random.value);
             Speed = Random.value / 1.25f;
         }
 
-        public void FindBorderCells() {
+        public int[] FindBorderCells() {
             Dictionary<int, List<Cell>> cellDict = new Dictionary<int, List<Cell>>();
-
             foreach(Cell cell in Cells) {
                 foreach(Cell neighbor in cell.Neighbors) {
                     // UnityEngine.Debug.Log(neighbor.Plate.Index);
@@ -64,6 +61,8 @@ namespace Generation.Voronoi {
             for(int a = 0; a < debugColors.Length; a++) {
                 debugColors[a] = Random.ColorHSV();
             }
+
+            return cellDict.Keys.ToArray();
         }
     }
 }

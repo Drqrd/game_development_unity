@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GlobeCameraController : MonoBehaviour
 {
+    [SerializeField] private World globeScript;   
     [SerializeField] private Transform target;
     [SerializeField] private bool mouseEnabled = true;
     [SerializeField] private bool keyboardEnabled = true;
@@ -15,28 +16,37 @@ public class GlobeCameraController : MonoBehaviour
     [SerializeField] private KeyCode down;
     [SerializeField] private KeyCode left;
     [SerializeField] private KeyCode right;
-
-    [SerializeField] private float distanceFromTarget;
-    [SerializeField] private float minimumDistance;
-    [SerializeField] private float maximumDistance;
+    [SerializeField] private float minimumRelativeDistance;
+    [SerializeField] private float maximumRelativeDistance;
     
+    private float minimumDistance, maximumDistance, distanceFromTarget;
     private Camera cam;
     float rotX, rotY, lerpVal, previousPosition, lerpDistance;
     bool lerping;
     void Start()
     {
-        cam = GetComponent<Camera>();     
+        cam = GetComponent<Camera>();
+
+        minimumDistance = Vector3.Distance(globeScript.VoronoiSphere.Cells[0].Center * 10f, Vector3.zero);
+        minimumRelativeDistance = minimumDistance + GetComponent<Camera>().nearClipPlane + minimumRelativeDistance;
+
+        maximumDistance = minimumRelativeDistance + minimumDistance * maximumRelativeDistance; 
+        
+        distanceFromTarget = minimumDistance + maximumDistance / 2f;
 
         rotX = 0f;
         rotY = 0f;
         lerpVal = 0f;
         previousPosition = distanceFromTarget;
         lerpDistance = distanceFromTarget;
+
+        cam.depthTextureMode = DepthTextureMode.DepthNormals;
     }
 
     // Update is called once per frame
     void Update()
-    {   transform.position = target.position;
+    {   
+        transform.position = target.position;
         lerping = lerpDistance != distanceFromTarget;
         if (lerping) {
             lerpVal = Mathf.Clamp01(lerpVal + Time.deltaTime * zoomSpeed);

@@ -1,5 +1,18 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1658746107272067540
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 4
 --- !u!21 &2100000
 Material:
   serializedVersion: 6
@@ -7,9 +20,9 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Space
-  m_Shader: {fileID: -6465566751694194690, guid: d34c749ab88fb88438a0456e0201c4f6, type: 3}
-  m_ShaderKeywords: _SUNDISK_HIGH_QUALITY
+  m_Name: MapOutline
+  m_Shader: {fileID: -6465566751694194690, guid: 764815f9413012a46badb8c4273f1842, type: 3}
+  m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -76,15 +89,20 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - Vector1_3a673500bd9e425db0e1f03d63be85f8: 0.25
-    - Vector1_410910284ffb4a65965c0a58fe7bf022: 0.08
-    - Vector1_649ef7fd48c14ae7838273228c143cfb: 0.14
-    - Vector1_6684cb8ef608488e834c2826bbcb4f17: 0.066
-    - Vector1_e18ba1a2edab4c3b93bfe0891c35dcf0: 345
-    - Vector1_ec9b8655d59947eeb1506daa052bf19b: 0.025
-    - Vector1_f7094ba261f04e76896422e34828208f: 0.33
+    - Vector1_09261319a88347028cc45845b80c4194: 1
+    - Vector1_36810b5ceb524a449bcc4d3fb3a9e5a7: 10
+    - Vector1_39d73085813b4b16aec3a5f0b48140a3: 0.01
+    - Vector1_55e123c8739040d4bee3799e46f97d85: 4
+    - Vector1_9ed9a059255641b29bf484d37fc4d428: 1
+    - Vector1_abca52e3dc91419495122ac26e4de1f6: 0.35
+    - Vector1_bd559fda98564dd3a65e3d78c2ef33de: 30
+    - Vector1_c34931966325416e856eb8d21d923b29: 0.0024
+    - Vector1_c7df3098e3984d048b71035cc9fac9c7: 100
+    - Vector1_e6cd86180b324895ac1677d0a15f6ed9: 8
+    - Vector1_e7c6c876d5cd42d4b2c0aee1a4026fb9: 0.3
+    - Vector1_e898ee19c5b9499d9575ce1b0880fd71: 0
+    - Vector1_ea5c02238d4e4af39306f7143a102211: 1
     - _AlphaClip: 0
-    - _AtmosphereThickness: 1
     - _Blend: 0
     - _BumpScale: 1
     - _ClearCoatMask: 0
@@ -95,7 +113,6 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EnvironmentReflections: 1
-    - _Exposure: 1.3
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -108,32 +125,15 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _SunDisk: 2
-    - _SunSize: 0.04
-    - _SunSizeConvergence: 5
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - Vector2_aead91c81b7e4cfca5c38265c0964a1e: {r: 256, g: 256, b: 0, a: 0}
-    - Vector2_c2fa64ee42ae4deb9a998039d9b8d843: {r: 2.31, g: 2.72, b: 0, a: 0}
+    - Color_e50a1987765d42618fbe1ff8b70325e6: {r: 0, g: 0, b: 0, a: 0}
+    - Color_ec383933aaf441ce9832cce111233c6d: {r: 1, g: 1, b: 1, a: 0}
+    - Vector2_2a6294e7f12742cd841a2a8c9ef768e2: {r: 0, g: 0, b: 0, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GroundColor: {r: 0.369, g: 0.349, b: 0.341, a: 1}
-    - _SkyTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []
---- !u!114 &5557640122257960689
-MonoBehaviour:
-  m_ObjectHideFlags: 11
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 4

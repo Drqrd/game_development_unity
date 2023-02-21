@@ -4,7 +4,7 @@ public class InvertedGameObject : MonoBehaviour
 {
     [SerializeField] private GameObject target;
     [SerializeField] private Material material = null;
-    [SerializeField] [Range(0.1f, 50f)] private float size;
+    [SerializeField] [Range(0.1f, 5000f)] private float size;
 
     public void Generate() {
         GameObject self = this.gameObject;

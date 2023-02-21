@@ -47,10 +47,10 @@ namespace Generation.Voronoi
 
         private Vector3[] GetTVertices() {
             Vector3[] tVertices = new Vector3[Vertices.Length + 1];
-            tVertices[0] = Center;
+            tVertices[0] = Vector3.zero;
 
             for(int a = 0; a < Vertices.Length; a++) {
-                tVertices[a + 1] = Vertices[a];
+                tVertices[a + 1] = (Vertices[a] - Center) * 10f;
             }
 
             return tVertices;
@@ -83,13 +83,16 @@ namespace Generation.Voronoi
         
         public class GenerationValues {
             public float Height { get; set; }
-            public float Temperature { get; set; }
+            // 0.25f, 0.75f - > 0.5 = more water in than out, and vice versa
+            public float Evaporation { get; set; }
+            public float[] Temperature { get; set; }
             public float Humidity { get; set; }
             public BiomeType Biome { get; set; }
 
             public GenerationValues() {
                 Height = -1f;
-                Temperature = -1f;
+                Evaporation = -1f;
+                Temperature = new float[] {-1f, -1f};
                 Humidity = -1f;
             }
         } 

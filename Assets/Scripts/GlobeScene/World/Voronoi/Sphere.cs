@@ -874,6 +874,7 @@ namespace Generation.Voronoi
 
                 MeshRenderer meshRenderer = tObj.AddComponent<MeshRenderer>();
                 meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
+                meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
                 meshRenderer.enabled = !debugProperties.DisableSphereMesh;
 
@@ -888,24 +889,28 @@ namespace Generation.Voronoi
             
             for(int vIndex = 0; vIndex < Cells.Length; vIndex++) {
                 GameObject vObj = new GameObject("Voronoi Cell " + vIndex);
+                vObj.transform.position = Cells[vIndex].Center * 10f;
                 vObj.transform.parent = voronoiSphereMesh.transform;
 
                 MeshFilter meshFilter = vObj.AddComponent<MeshFilter>();
                 Mesh mesh = new Mesh();
-
+                
                 mesh.vertices = Cells[vIndex].TVertices;
                 mesh.triangles = Cells[vIndex].Triangles;
                 
                 meshFilter.sharedMesh = mesh;
                 meshFilter.sharedMesh.RecalculateNormals();
+                meshFilter.sharedMesh.RecalculateBounds();
                 
                 Cells[vIndex].MeshRef = mesh;
 
                 MeshRenderer meshRenderer = vObj.AddComponent<MeshRenderer>();
+                
+                // When creating plates, if height above threshold, switches to MapOutlined
                 meshRenderer.sharedMaterial = Resources.Load<Material>("Materials/Globe/Map");
+                meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
                 meshRenderer.enabled = !debugProperties.DisableSphereMesh;
-
                 if (debugProperties.GenerateDebugCells) {
                     Debug.Cell dt = vObj.AddComponent<Debug.Cell>();
                     dt.cell = Cells[vIndex];

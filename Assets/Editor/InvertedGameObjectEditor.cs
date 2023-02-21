@@ -3,8 +3,8 @@ using UnityEditor;
 
 namespace CustomEditors {
 [CustomEditor(typeof(InvertedGameObject))]
-public class InvertedMeshEditor : Editor
-{
+    public class InvertedMeshEditor : Editor
+    {
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -14,6 +14,5 @@ public class InvertedMeshEditor : Editor
                 script.Generate();
             }
         }
-}
-
+    }   
 }
